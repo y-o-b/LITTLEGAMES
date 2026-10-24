@@ -36,6 +36,9 @@
     .player strong { display: block; color: var(--cyan); font-size: 1.25rem; }
     .board { display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
     .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--bg); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transform-style: preserve-3d; transition: transform .25s ease; }
+    .board[data-size="8"] .memory-card { font-size: clamp(1.8rem, 8vw, 3.6rem); }
+    .board[data-size="12"] .memory-card { font-size: clamp(1.45rem, 6.5vw, 2.8rem); }
+    .board[data-size="18"] .memory-card { font-size: clamp(1.1rem, 5vw, 2.2rem); }
     .memory-card::before, .memory-card::after { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; }
     .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
     .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
@@ -105,7 +108,7 @@
     function shuffle(items) { return [...items].sort(() => Math.random() - .5); }
     function start() {
       clearInterval(timer); const chosen = shuffle(icons).slice(0, size); cards = shuffle(chosen.flatMap(icon => [icon, icon])); first = second = null; locked = false; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
-      boardElement.style.gridTemplateColumns = `repeat(${size === 18 ? 6 : 4}, 1fr)`; boardElement.innerHTML = '';
+      boardElement.dataset.size = size; boardElement.style.gridTemplateColumns = `repeat(${size === 18 ? 6 : 4}, 1fr)`; boardElement.innerHTML = '';
       cards.forEach((icon, index) => { const card = document.createElement('button'); card.className = 'memory-card'; card.type = 'button'; card.dataset.index = index; card.dataset.icon = icon.symbol; card.style.setProperty('--symbol-bg', icon.color); card.setAttribute('role', 'gridcell'); card.setAttribute('aria-label', `Karte ${index + 1}, verdeckt`); card.addEventListener('click', () => flip(card)); boardElement.appendChild(card); });
       timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); updateStats(); document.getElementById('message').innerHTML = mode === 'two' ? '<b>Spieler 1 ist dran.</b> Finde ein Paar.' : '<b>Bereit?</b> Finde das erste Paar.';
     }
