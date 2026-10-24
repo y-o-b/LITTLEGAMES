@@ -31,16 +31,21 @@
     .playing-card { position: relative; width: var(--card-width); height: calc(var(--card-width) * 1.4); margin-bottom: calc(var(--card-width) * -.62); padding: 0; border: 0; background: transparent; cursor: pointer; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
     .card-back { width: var(--card-width); height: calc(var(--card-width) * 1.4); margin-bottom: calc(var(--card-width) * -.62); border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
-    .card-face { display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 5px; border: 3px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-weight: 900; text-align: left; }
+    .card-face { position: relative; display: block; height: 100%; padding: 5px; border: 3px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-weight: 900; text-align: left; }
     .card-face.red { color: var(--red); }
-    .card-face .suit { align-self: center; font-size: 1.35rem; line-height: 1; }
+    .card-face .corner { position: absolute; font-size: .72rem; line-height: 1; }
+    .card-face .top-left { top: 4px; left: 5px; }
+    .card-face .top-right { top: 4px; right: 5px; }
+    .card-face .bottom-left { bottom: 4px; left: 5px; }
+    .card-face .bottom-right { right: 5px; bottom: 4px; }
+    .card-face .suit { position: absolute; top: 50%; left: 50%; font-size: clamp(1.4rem, 4vw, 2.7rem); line-height: 1; transform: translate(-50%, -50%); }
     .playing-card.selected .card-face { transform: translateY(-4px); }
     .playing-card.selected .card-face { outline: 4px solid var(--red); }
     .message { min-height: 24px; margin: 17px 0 10px; color: var(--muted); text-align: center; }
     .message b { color: var(--ink); }
     .new-game { display: block; width: 100%; padding: 11px; border: 3px solid var(--ink); border-radius: 9px; color: var(--paper); background: var(--red); box-shadow: 4px 4px 0 var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
-    @media (max-width: 600px) { .tableau { gap: 4px; min-height: 225px; } .card-face { padding: 3px; border-width: 2px; font-size: .76rem; } .card-face .suit { font-size: 1rem; } }
+    @media (max-width: 600px) { .tableau { gap: 4px; min-height: 225px; } .card-face { padding: 3px; border-width: 2px; font-size: .76rem; } .card-face .suit { font-size: 1.35rem; } }
   </style>
 </head>
 <body>
@@ -65,7 +70,7 @@
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => ({ suit, rank, name, red: suitIndex === 1 || suitIndex === 2 }))); }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
     function start() { let cards = shuffle(deck()); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; render(); }
-    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span>${card.name}</span><span class="suit">${card.suit}</span>`; return element; }
+    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right">${card.name}</span><span class="corner bottom-left">${card.name}</span><span class="corner bottom-right">${card.name}</span><span class="suit">${card.suit}</span>`; return element; }
     function cardButton(card, source, index, cardIndex = 0) { const button = document.createElement('button'); const isSelected = selected && selected.source === source && selected.index === index && (source === 'tableau' ? cardIndex >= selected.cardIndex : selected.cardIndex === cardIndex); button.className = 'playing-card' + (isSelected ? ' selected' : ''); button.type = 'button'; button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card)); button.addEventListener('click', () => clickCard(source, index, cardIndex)); return button; }
     function render() {
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
