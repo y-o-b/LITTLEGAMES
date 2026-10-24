@@ -30,6 +30,7 @@
     .column.empty { border: 2px dashed rgba(23,23,23,.35); }
     .playing-card { position: relative; height: 80px; margin-bottom: -50px; padding: 0; border: 0; background: transparent; cursor: pointer; width: 100%; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
+    .card-back { height: 80px; margin-bottom: -50px; border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
     .card-face { display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 5px; border: 3px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-weight: 900; text-align: left; }
     .card-face.red { color: var(--red); }
     .card-face .suit { align-self: center; font-size: 1.35rem; line-height: 1; }
@@ -39,7 +40,7 @@
     .message b { color: var(--ink); }
     .new-game { display: block; width: 100%; padding: 11px; border: 3px solid var(--ink); border-radius: 9px; color: var(--paper); background: var(--red); box-shadow: 4px 4px 0 var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
-    @media (max-width: 600px) { .pile { min-width: 54px; height: 74px; } .pile-label { margin-top: 77px; } .foundation { width: 45px; height: 62px; } .tableau { gap: 4px; min-height: 225px; } .playing-card { height: 64px; margin-bottom: -40px; } .card-face { padding: 3px; border-width: 2px; font-size: .76rem; } .card-face .suit { font-size: 1rem; } }
+    @media (max-width: 600px) { .pile { min-width: 54px; height: 74px; } .pile-label { margin-top: 77px; } .foundation { width: 45px; height: 62px; } .tableau { gap: 4px; min-height: 225px; } .playing-card, .card-back { height: 64px; margin-bottom: -40px; } .card-face { padding: 3px; border-width: 2px; font-size: .76rem; } .card-face .suit { font-size: 1rem; } }
   </style>
 </head>
 <body>
@@ -63,17 +64,17 @@
     let tableau, stock, waste, foundations, selected = null;
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => ({ suit, rank, name, red: suitIndex === 1 || suitIndex === 2 }))); }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start() { let cards = shuffle(deck()); tableau = Array.from({ length: 7 }, (_, column) => cards.splice(0, column + 1)); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; render(); }
+    function start() { let cards = shuffle(deck()); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; render(); }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span>${card.name}</span><span class="suit">${card.suit}</span>`; return element; }
     function cardButton(card, source, index) { const button = document.createElement('button'); button.className = 'playing-card' + (selected && selected.source === source && selected.index === index ? ' selected' : ''); button.type = 'button'; button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card)); button.addEventListener('click', () => clickCard(source, index)); return button; }
     function render() {
-      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); column.forEach((card, cardIndex) => area.appendChild(cardButton(card, 'tableau', columnIndex))); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
+      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); column.forEach(card => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); } const wasteLabel = document.createElement('span'); wasteLabel.className = 'pile-label'; wasteLabel.textContent = 'Ablage'; wasteElement.appendChild(wasteLabel);
       foundationsElement.innerHTML = ''; foundations.forEach((pile, suitIndex) => { const area = document.createElement('button'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.type = 'button'; area.setAttribute('aria-label', `Grundstapel ${suits[suitIndex]}`); if (pile.length) area.appendChild(face(pile[pile.length - 1])); area.addEventListener('click', () => moveToFoundation(suitIndex)); foundationsElement.appendChild(area); });
     }
     function clickCard(source, index) { if (selected) { if (selected.source === source && selected.index === index) { selected = null; render(); return; } if (source === 'tableau') { moveToTableau(index); return; } } selected = { source, index }; render(); }
     function picked() { return selected?.source === 'waste' ? waste[waste.length - 1] : selected ? tableau[selected.index][tableau[selected.index].length - 1] : null; }
-    function removeSelected() { if (selected.source === 'waste') waste.pop(); else tableau[selected.index].pop(); selected = null; }
+    function removeSelected() { if (selected.source === 'waste') waste.pop(); else { tableau[selected.index].pop(); if (tableau[selected.index].length) tableau[selected.index].at(-1).faceUp = true; } selected = null; }
     function moveToTableau(destination) { const card = picked(); if (!card || (selected.source === 'tableau' && selected.index === destination)) return; const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { removeSelected(); tableau[destination].push(card); message.innerHTML = '<b>Guter Zug!</b> Wähle die nächste Karte.'; render(); } }
     function moveToFoundation(suitIndex) { const card = picked(); if (!card || suits.indexOf(card.suit) !== suitIndex) return; const target = foundations[suitIndex].at(-1); if ((!target && card.rank === 0) || (target && card.rank === target.rank + 1)) { removeSelected(); foundations[suitIndex].push(card); message.innerHTML = foundations.every(pile => pile.length === 13) ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); } }
     stockElement.addEventListener('click', () => { if (stock.length) waste.push(stock.pop()); else { stock = waste.reverse(); waste = []; } selected = null; render(); });
