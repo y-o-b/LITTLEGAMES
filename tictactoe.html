@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#10131f" />
+  <meta name="theme-color" content="#4B8ED8" />
   <title>Tic Tac Toe · boyreese.de</title>
   <style>
     :root {
-      --bg: #10131f;
-      --panel: rgba(27, 32, 52, .88);
-      --panel-light: #242a45;
-      --text: #f6f7ff;
-      --muted: #a8afc8;
-      --purple: #9b8cff;
-      --cyan: #5de2e7;
-      --pink: #ff7cb7;
-      --line: rgba(255, 255, 255, .1);
+      --bg: #4B8ED8;
+      --panel: #FFFFFF;
+      --panel-light: #FFFFFF;
+      --text: #171717;
+      --muted: rgba(23,23,23,.7);
+      --purple: #EF4B3F;
+      --cyan: #171717;
+      --pink: #EF4B3F;
+      --line: #171717;
     }
 
     * { box-sizing: border-box; }
@@ -23,9 +23,10 @@
       min-height: 100vh;
       margin: 0;
       color: var(--text);
-      background: radial-gradient(circle at 15% 10%, #29265b 0, transparent 36%),
-        radial-gradient(circle at 88% 85%, #193d50 0, transparent 32%), var(--bg);
-      font: 16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      background-image: radial-gradient(#171717 1.2px, transparent 1.2px);
+      background-size: 18px 18px;
+      font: 16px/1.5 Arial, Helvetica, sans-serif;
       display: grid;
       place-items: center;
       padding: 30px 16px;
@@ -40,23 +41,22 @@
     header p { margin: 0; color: var(--muted); }
     .game {
       background: var(--panel);
-      border: 1px solid var(--line);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
-      backdrop-filter: blur(18px);
-      border-radius: 25px;
+      border: 3px solid var(--line);
+      box-shadow: 7px 7px 0 #171717;
+      border-radius: 18px;
       padding: clamp(18px, 5vw, 32px);
     }
-    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; background: #111525; border-radius: 14px; margin-bottom: 22px; }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; background: #171717; border-radius: 10px; margin-bottom: 22px; }
     button { font: inherit; cursor: pointer; border: 0; color: inherit; }
     .mode { border-radius: 10px; padding: 11px 8px; color: var(--muted); background: transparent; font-weight: 700; transition: .2s ease; }
-    .mode.active { color: var(--text); background: var(--panel-light); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+    .mode.active { color: var(--text); background: var(--panel-light); box-shadow: 3px 3px 0 var(--purple); }
     .difficulty { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -9px 2px 20px; color: var(--muted); font-size: .82rem; }
     .difficulty[hidden] { display: none; }
     .difficulty-options { display: flex; gap: 5px; }
     .difficulty-button { padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: transparent; font-size: .78rem; }
     .difficulty-button.active { color: var(--text); background: var(--panel-light); border-color: var(--purple); }
     .score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 20px; }
-    .score-card { text-align: center; background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; }
+    .score-card { text-align: center; background: #FFFFFF; border: 2px solid var(--line); border-radius: 10px; padding: 10px 4px; }
     .score-card strong { display: block; font-size: 1.45rem; line-height: 1.1; }
     .score-card span { color: var(--muted); font-size: .72rem; }
     .score-card:first-child strong { color: var(--cyan); }
@@ -64,14 +64,14 @@
     .turn { text-align: center; color: var(--muted); font-size: .95rem; min-height: 29px; margin-bottom: 12px; }
     .turn b { color: var(--text); }
     .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 390px; margin: 0 auto 22px; }
-    .cell { aspect-ratio: 1; border-radius: 17px; background: #202642; border: 1px solid rgba(255,255,255,.07); color: var(--text); font-size: clamp(2.8rem, 13vw, 5rem); font-weight: 800; line-height: 1; transition: transform .15s, background .15s; }
-    .cell:hover:not(:disabled) { transform: translateY(-3px); background: #2a3154; }
+    .cell { aspect-ratio: 1; border-radius: 10px; background: #FFFFFF; border: 3px solid #171717; color: var(--text); font-size: clamp(2.8rem, 13vw, 5rem); font-weight: 800; line-height: 1; box-shadow: 3px 3px 0 #171717; transition: transform .15s, background .15s; }
+    .cell:hover:not(:disabled) { transform: translate(-2px, -2px); background: #F5F5F5; }
     .cell:focus-visible, .mode:focus-visible, .new-game:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
     .cell:disabled { cursor: default; }
     .cell.x { color: var(--cyan); }
     .cell.o { color: var(--pink); }
-    .cell.winner { background: linear-gradient(135deg, rgba(155,140,255,.45), rgba(93,226,231,.22)); border-color: var(--purple); }
-    .new-game { display: block; width: 100%; background: linear-gradient(100deg, var(--purple), #7069f6); border-radius: 13px; padding: 13px; font-weight: 800; box-shadow: 0 8px 24px rgba(112,105,246,.25); transition: transform .15s, filter .15s; }
+    .cell.winner { background: #EF4B3F; color: #FFFFFF; border-color: #171717; }
+    .new-game { display: block; width: 100%; background: var(--purple); color: #FFFFFF; border: 3px solid #171717; border-radius: 10px; padding: 13px; font-weight: 800; box-shadow: 4px 4px 0 #171717; transition: transform .15s, filter .15s; }
     .new-game:hover { transform: translateY(-2px); filter: brightness(1.1); }
     footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 21px; }
     @media (max-width: 390px) { .game { padding: 16px; } .cell { border-radius: 13px; } }
