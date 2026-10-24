@@ -2,9 +2,160 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>boyreese.de</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#10131f" />
+  <title>Tic Tac Toe · boyreese.de</title>
+  <style>
+    :root {
+      --bg: #10131f;
+      --panel: rgba(27, 32, 52, .88);
+      --panel-light: #242a45;
+      --text: #f6f7ff;
+      --muted: #a8afc8;
+      --purple: #9b8cff;
+      --cyan: #5de2e7;
+      --pink: #ff7cb7;
+      --line: rgba(255, 255, 255, .1);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(circle at 15% 10%, #29265b 0, transparent 36%),
+        radial-gradient(circle at 88% 85%, #193d50 0, transparent 32%), var(--bg);
+      font: 16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 30px 16px;
+    }
+
+    .app { width: min(100%, 560px); }
+    header { text-align: center; margin-bottom: 25px; }
+    .eyebrow { color: var(--cyan); font-size: .75rem; letter-spacing: .2em; font-weight: 800; text-transform: uppercase; }
+    h1 { font-size: clamp(2.4rem, 10vw, 4.5rem); line-height: .95; letter-spacing: -.07em; margin: 8px 0 12px; }
+    header p { margin: 0; color: var(--muted); }
+    .game {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
+      backdrop-filter: blur(18px);
+      border-radius: 25px;
+      padding: clamp(18px, 5vw, 32px);
+    }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; background: #111525; border-radius: 14px; margin-bottom: 22px; }
+    button { font: inherit; cursor: pointer; border: 0; color: inherit; }
+    .mode { border-radius: 10px; padding: 11px 8px; color: var(--muted); background: transparent; font-weight: 700; transition: .2s ease; }
+    .mode.active { color: var(--text); background: var(--panel-light); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+    .score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 20px; }
+    .score-card { text-align: center; background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; }
+    .score-card strong { display: block; font-size: 1.45rem; line-height: 1.1; }
+    .score-card span { color: var(--muted); font-size: .72rem; }
+    .score-card:first-child strong { color: var(--cyan); }
+    .score-card:last-child strong { color: var(--pink); }
+    .turn { text-align: center; color: var(--muted); font-size: .95rem; min-height: 29px; margin-bottom: 12px; }
+    .turn b { color: var(--text); }
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 390px; margin: 0 auto 22px; }
+    .cell { aspect-ratio: 1; border-radius: 17px; background: #202642; border: 1px solid rgba(255,255,255,.07); color: var(--text); font-size: clamp(2.8rem, 13vw, 5rem); font-weight: 800; line-height: 1; transition: transform .15s, background .15s; }
+    .cell:hover:not(:disabled) { transform: translateY(-3px); background: #2a3154; }
+    .cell:focus-visible, .mode:focus-visible, .new-game:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+    .cell:disabled { cursor: default; }
+    .cell.x { color: var(--cyan); }
+    .cell.o { color: var(--pink); }
+    .cell.winner { background: linear-gradient(135deg, rgba(155,140,255,.45), rgba(93,226,231,.22)); border-color: var(--purple); }
+    .new-game { display: block; width: 100%; background: linear-gradient(100deg, var(--purple), #7069f6); border-radius: 13px; padding: 13px; font-weight: 800; box-shadow: 0 8px 24px rgba(112,105,246,.25); transition: transform .15s, filter .15s; }
+    .new-game:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 21px; }
+    @media (max-width: 390px) { .game { padding: 16px; } .cell { border-radius: 13px; } }
+  </style>
 </head>
 <body>
-  <h1>boyreese.de</h1>
+  <main class="app">
+    <header>
+      <div class="eyebrow">boyreese.de · game night</div>
+      <h1>Tic Tac Toe</h1>
+      <p>Setze deine Zeichen. Drei in einer Reihe gewinnen.</p>
+    </header>
+
+    <section class="game" aria-label="Tic Tac Toe Spiel">
+      <div class="mode-switch" role="group" aria-label="Spielmodus">
+        <button class="mode active" data-mode="computer" type="button">1 Spieler · Computer</button>
+        <button class="mode" data-mode="friends" type="button">2 Spieler</button>
+      </div>
+      <div class="score" aria-label="Punktestand">
+        <div class="score-card"><strong id="scoreX">0</strong><span id="labelX">Du (X)</span></div>
+        <div class="score-card"><strong id="scoreDraw">0</strong><span>Unentschieden</span></div>
+        <div class="score-card"><strong id="scoreO">0</strong><span id="labelO">Computer (O)</span></div>
+      </div>
+      <div class="turn" id="turn" aria-live="polite"><b>Du bist dran</b> · Wähle ein Feld</div>
+      <div class="board" role="grid" aria-label="Spielfeld">
+        <button class="cell" data-index="0" role="gridcell" aria-label="Feld 1" type="button"></button>
+        <button class="cell" data-index="1" role="gridcell" aria-label="Feld 2" type="button"></button>
+        <button class="cell" data-index="2" role="gridcell" aria-label="Feld 3" type="button"></button>
+        <button class="cell" data-index="3" role="gridcell" aria-label="Feld 4" type="button"></button>
+        <button class="cell" data-index="4" role="gridcell" aria-label="Feld 5" type="button"></button>
+        <button class="cell" data-index="5" role="gridcell" aria-label="Feld 6" type="button"></button>
+        <button class="cell" data-index="6" role="gridcell" aria-label="Feld 7" type="button"></button>
+        <button class="cell" data-index="7" role="gridcell" aria-label="Feld 8" type="button"></button>
+        <button class="cell" data-index="8" role="gridcell" aria-label="Feld 9" type="button"></button>
+      </div>
+      <button class="new-game" id="newGame" type="button">Neues Spiel</button>
+    </section>
+    <footer>Du spielst immer X und beginnst.</footer>
+  </main>
+
+  <script>
+    const cells = [...document.querySelectorAll('.cell')];
+    const turnText = document.getElementById('turn');
+    const modeButtons = [...document.querySelectorAll('.mode')];
+    const scores = { X: 0, O: 0, draw: 0 };
+    const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    let board = Array(9).fill(''), current = 'X', gameOver = false, mode = 'computer';
+
+    function result(state) {
+      for (const line of wins) if (line.every(i => state[i] && state[i] === state[line[0]])) return { winner: state[line[0]], line };
+      return state.every(Boolean) ? { winner: 'draw', line: [] } : null;
+    }
+    function setTurn(message) { turnText.innerHTML = message; }
+    function drawBoard() {
+      cells.forEach((cell, i) => {
+        cell.textContent = board[i]; cell.className = 'cell' + (board[i] ? ' ' + board[i].toLowerCase() : '');
+        cell.disabled = Boolean(board[i]) || gameOver || (mode === 'computer' && current === 'O');
+        cell.setAttribute('aria-label', board[i] ? `Feld ${i + 1}: ${board[i]}` : `Feld ${i + 1}: frei`);
+      });
+      document.getElementById('scoreX').textContent = scores.X;
+      document.getElementById('scoreO').textContent = scores.O;
+      document.getElementById('scoreDraw').textContent = scores.draw;
+    }
+    function finish(outcome) {
+      gameOver = true;
+      if (outcome.winner === 'draw') { scores.draw++; setTurn('<b>Unentschieden!</b> · Gut gespielt'); }
+      else { scores[outcome.winner]++; setTurn(`<b>${outcome.winner === 'X' ? (mode === 'computer' ? 'Du' : 'Spieler 1') : (mode === 'computer' ? 'Computer' : 'Spieler 2')} gewinnt!</b> · Stark gemacht`); }
+      drawBoard();
+      outcome.line.forEach(i => cells[i].classList.add('winner'));
+    }
+    function play(index) {
+      if (gameOver || board[index] || (mode === 'computer' && current === 'O')) return;
+      board[index] = current; drawBoard();
+      const outcome = result(board); if (outcome) return finish(outcome);
+      current = current === 'X' ? 'O' : 'X';
+      if (mode === 'computer' && current === 'O') { setTurn('<b>Computer denkt nach …</b>'); setTimeout(computerMove, 450); }
+      else setTurn(`<b>${current === 'X' ? 'Spieler 1 (X)' : 'Spieler 2 (O)'} ist dran</b>`);
+      drawBoard();
+    }
+    function computerMove() {
+      if (gameOver) return;
+      // Der Computer gewinnt, blockt und spielt sonst bevorzugt die Mitte/Ecken.
+      const move = findTactical('O') ?? findTactical('X') ?? ([4,0,2,6,8,1,3,5,7].find(i => !board[i]));
+      play(move);
+    }
+    function findTactical(mark) { for (const line of wins) { const values = line.map(i => board[i]); if (values.filter(v => v === mark).length === 2 && values.includes('')) return line[values.indexOf('')]; } return null; }
+    function reset() { board = Array(9).fill(''); current = 'X'; gameOver = false; drawBoard(); setTurn('<b>Du bist dran</b> · Wähle ein Feld'); }
+    modeButtons.forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; modeButtons.forEach(b => b.classList.toggle('active', b === button)); document.getElementById('labelX').textContent = mode === 'computer' ? 'Du (X)' : 'Spieler 1 (X)'; document.getElementById('labelO').textContent = mode === 'computer' ? 'Computer (O)' : 'Spieler 2 (O)'; reset(); }));
+    cells.forEach(cell => cell.addEventListener('click', () => play(Number(cell.dataset.index))));
+    document.getElementById('newGame').addEventListener('click', reset);
+    drawBoard();
+  </script>
 </body>
 </html>
