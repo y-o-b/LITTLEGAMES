@@ -14,8 +14,10 @@
     h1 { margin: 10px 0; font-size: clamp(3rem, 13vw, 6rem); line-height: .9; letter-spacing: -.08em; }
     p { margin: 0 auto 28px; max-width: 450px; color: var(--muted); }
     .card { padding: 34px 26px; border: 1px solid rgba(255,255,255,.1); border-radius: 25px; background: var(--panel); box-shadow: 0 24px 70px rgba(0,0,0,.35); backdrop-filter: blur(18px); }
+    .games { display: grid; gap: 14px; }
     .card h2 { margin: 0 0 7px; font-size: 1.35rem; }
     .card p { margin-bottom: 22px; font-size: .95rem; }
+    .card + .card { margin-top: 14px; }
     a { display: inline-block; padding: 13px 24px; border-radius: 13px; color: var(--text); background: linear-gradient(100deg, var(--purple), #7069f6); font-weight: 800; text-decoration: none; box-shadow: 0 8px 24px rgba(112,105,246,.25); transition: transform .15s, filter .15s; }
     a:hover { transform: translateY(-2px); filter: brightness(1.1); }
     a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
@@ -26,10 +28,17 @@
   <main class="hero">
     <div class="eyebrow">boyreese.de</div>
     <h1>Willkommen.</h1>
-    <div class="card">
-      <h2>Tic Tac Toe</h2>
-      <p>Spiele gegen den Computer oder fordere eine zweite Person heraus.</p>
-      <a href="tictactoe.html">Spiel starten&nbsp; →</a>
+    <div class="games">
+      <div class="card">
+        <h2>Tic Tac Toe</h2>
+        <p>Spiele gegen den Computer oder fordere eine zweite Person heraus.</p>
+        <a href="tictactoe.html">Spiel starten&nbsp; →</a>
+      </div>
+      <div class="card">
+        <h2>Memory</h2>
+        <p>Finde alle Kartenpaare – mit frei wählbarer Spielfeldgröße.</p>
+        <a href="memory.html">Memory spielen&nbsp; →</a>
+      </div>
     </div>
     <footer>Eine kleine Spielpause gefällig?</footer>
   </main>
