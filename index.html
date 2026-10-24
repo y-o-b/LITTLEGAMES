@@ -48,6 +48,11 @@
     button { font: inherit; cursor: pointer; border: 0; color: inherit; }
     .mode { border-radius: 10px; padding: 11px 8px; color: var(--muted); background: transparent; font-weight: 700; transition: .2s ease; }
     .mode.active { color: var(--text); background: var(--panel-light); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+    .difficulty { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -9px 2px 20px; color: var(--muted); font-size: .82rem; }
+    .difficulty[hidden] { display: none; }
+    .difficulty-options { display: flex; gap: 5px; }
+    .difficulty-button { padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: transparent; font-size: .78rem; }
+    .difficulty-button.active { color: var(--text); background: var(--panel-light); border-color: var(--purple); }
     .score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 20px; }
     .score-card { text-align: center; background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; }
     .score-card strong { display: block; font-size: 1.45rem; line-height: 1.1; }
@@ -83,6 +88,14 @@
         <button class="mode active" data-mode="computer" type="button">1 Spieler · Computer</button>
         <button class="mode" data-mode="friends" type="button">2 Spieler</button>
       </div>
+      <div class="difficulty" id="difficulty" aria-label="Spielstärke">
+        <span>Spielstärke</span>
+        <div class="difficulty-options" role="group" aria-label="Spielstärke auswählen">
+          <button class="difficulty-button active" data-difficulty="easy" type="button">Einfach</button>
+          <button class="difficulty-button" data-difficulty="medium" type="button">Mittel</button>
+          <button class="difficulty-button" data-difficulty="hard" type="button">Schwer</button>
+        </div>
+      </div>
       <div class="score" aria-label="Punktestand">
         <div class="score-card"><strong id="scoreX">0</strong><span id="labelX">Du (X)</span></div>
         <div class="score-card"><strong id="scoreDraw">0</strong><span>Unentschieden</span></div>
@@ -109,9 +122,11 @@
     const cells = [...document.querySelectorAll('.cell')];
     const turnText = document.getElementById('turn');
     const modeButtons = [...document.querySelectorAll('.mode')];
+    const difficultyButtons = [...document.querySelectorAll('.difficulty-button')];
+    const difficultyPanel = document.getElementById('difficulty');
     const scores = { X: 0, O: 0, draw: 0 };
     const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    let board = Array(9).fill(''), current = 'X', gameOver = false, mode = 'computer';
+    let board = Array(9).fill(''), current = 'X', gameOver = false, mode = 'computer', difficulty = 'easy';
 
     function result(state) {
       for (const line of wins) if (line.every(i => state[i] && state[i] === state[line[0]])) return { winner: state[line[0]], line };
@@ -146,13 +161,29 @@
     }
     function computerMove() {
       if (gameOver) return;
-      // Der Computer gewinnt, blockt und spielt sonst bevorzugt die Mitte/Ecken.
-      const move = findTactical('O') ?? findTactical('X') ?? ([4,0,2,6,8,1,3,5,7].find(i => !board[i]));
+      const empty = board.map((value, i) => value ? null : i).filter(i => i !== null);
+      let move;
+      if (difficulty === 'easy') move = empty[Math.floor(Math.random() * empty.length)];
+      else if (difficulty === 'medium') move = findTactical('O') ?? findTactical('X') ?? empty[Math.floor(Math.random() * empty.length)];
+      else move = bestMove();
       play(move, true);
     }
     function findTactical(mark) { for (const line of wins) { const values = line.map(i => board[i]); if (values.filter(v => v === mark).length === 2 && values.includes('')) return line[values.indexOf('')]; } return null; }
+    function bestMove() {
+      let bestScore = -Infinity, move = 0;
+      board.forEach((value, i) => { if (!value) { board[i] = 'O'; const score = minimax(false); board[i] = ''; if (score > bestScore) { bestScore = score; move = i; } } });
+      return move;
+    }
+    function minimax(maximizing) {
+      const outcome = result(board);
+      if (outcome) return outcome.winner === 'O' ? 10 : outcome.winner === 'X' ? -10 : 0;
+      const scores = [];
+      board.forEach((value, i) => { if (!value) { board[i] = maximizing ? 'O' : 'X'; scores.push(minimax(!maximizing)); board[i] = ''; } });
+      return maximizing ? Math.max(...scores) : Math.min(...scores);
+    }
     function reset() { board = Array(9).fill(''); current = 'X'; gameOver = false; drawBoard(); setTurn('<b>Du bist dran</b> · Wähle ein Feld'); }
-    modeButtons.forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; modeButtons.forEach(b => b.classList.toggle('active', b === button)); document.getElementById('labelX').textContent = mode === 'computer' ? 'Du (X)' : 'Spieler 1 (X)'; document.getElementById('labelO').textContent = mode === 'computer' ? 'Computer (O)' : 'Spieler 2 (O)'; reset(); }));
+    modeButtons.forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; modeButtons.forEach(b => b.classList.toggle('active', b === button)); difficultyPanel.hidden = mode !== 'computer'; document.getElementById('labelX').textContent = mode === 'computer' ? 'Du (X)' : 'Spieler 1 (X)'; document.getElementById('labelO').textContent = mode === 'computer' ? 'Computer (O)' : 'Spieler 2 (O)'; reset(); }));
+    difficultyButtons.forEach(button => button.addEventListener('click', () => { difficulty = button.dataset.difficulty; difficultyButtons.forEach(b => b.classList.toggle('active', b === button)); reset(); }));
     cells.forEach(cell => cell.addEventListener('click', () => play(Number(cell.dataset.index))));
     document.getElementById('newGame').addEventListener('click', reset);
     drawBoard();
