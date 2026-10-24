@@ -59,16 +59,18 @@
     .score-card span { color: var(--muted); font-size: .72rem; }
     .score-card:first-child strong { color: var(--cyan); }
     .score-card:last-child strong { color: var(--pink); }
+    @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.025) rotate(-.4deg); } 70% { transform: scale(1.01) rotate(.4deg); } }
+    @keyframes winnerPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    .game.victory { animation: victoryPulse .8s ease; }
     .turn { text-align: center; color: var(--muted); font-size: .95rem; min-height: 29px; margin-bottom: 12px; }
     .turn b { color: var(--text); }
     .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 390px; margin: 0 auto 22px; }
-    .cell { aspect-ratio: 1; border-radius: 10px; background: #FFFFFF; border: 3px solid #171717; color: var(--text); font-size: clamp(2.8rem, 13vw, 5rem); font-weight: 800; line-height: 1; box-shadow: 3px 3px 0 #171717; transition: transform .15s, background .15s; }
-    .cell:hover:not(:disabled) { transform: translate(-2px, -2px); background: #F5F5F5; }
+    .cell { aspect-ratio: 1; border-radius: 10px; background: #FFFFFF; border: 3px solid #171717; color: var(--text); font-size: clamp(2.8rem, 13vw, 5rem); font-weight: 800; line-height: 1; box-shadow: 3px 3px 0 #171717; transition: background .15s; }
     .cell:focus-visible, .mode:focus-visible, .new-game:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
     .cell:disabled { cursor: default; }
     .cell.x { color: var(--cyan); }
     .cell.o { color: var(--pink); }
-    .cell.winner { background: #EF4B3F; color: #FFFFFF; border-color: #171717; }
+    .cell.winner { background: #EF4B3F; color: #FFFFFF; border-color: #171717; animation: winnerPop .65s ease; }
     .new-game { display: block; width: 100%; background: var(--purple); color: #FFFFFF; border: 3px solid #171717; border-radius: 10px; padding: 13px; font-weight: 800; box-shadow: 4px 4px 0 #171717; transition: transform .15s, filter .15s; }
     .new-game:hover { transform: translateY(-2px); filter: brightness(1.1); }
     footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 21px; }
@@ -148,6 +150,7 @@
       if (outcome.winner === 'draw') { scores.draw++; setTurn('<b>Unentschieden!</b> · Gut gespielt'); }
       else { scores[outcome.winner]++; setTurn(`<b>${outcome.winner === 'X' ? (mode === 'computer' ? 'Du' : 'Spieler 1') : (mode === 'computer' ? 'Computer' : 'Spieler 2')} gewinnt!</b> · Stark gemacht`); }
       drawBoard();
+      if (outcome.winner !== 'draw') document.querySelector('.game').classList.add('victory');
       outcome.line.forEach(i => cells[i].classList.add('winner'));
     }
     function play(index, isComputer = false) {
@@ -181,7 +184,7 @@
       board.forEach((value, i) => { if (!value) { board[i] = maximizing ? 'O' : 'X'; scores.push(minimax(!maximizing)); board[i] = ''; } });
       return maximizing ? Math.max(...scores) : Math.min(...scores);
     }
-    function reset() { board = Array(9).fill(''); current = 'X'; gameOver = false; drawBoard(); setTurn('<b>Du bist dran</b> · Wähle ein Feld'); }
+    function reset() { board = Array(9).fill(''); current = 'X'; gameOver = false; document.querySelector('.game').classList.remove('victory'); drawBoard(); setTurn('<b>Du bist dran</b> · Wähle ein Feld'); }
     modeButtons.forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; modeButtons.forEach(b => b.classList.toggle('active', b === button)); difficultyPanel.hidden = mode !== 'computer'; document.getElementById('labelX').textContent = mode === 'computer' ? 'Du (X)' : 'Spieler 1 (X)'; document.getElementById('labelO').textContent = mode === 'computer' ? 'Computer (O)' : 'Spieler 2 (O)'; reset(); }));
     difficultyButtons.forEach(button => button.addEventListener('click', () => { difficulty = button.dataset.difficulty; difficultyButtons.forEach(b => b.classList.toggle('active', b === button)); reset(); }));
     cells.forEach(cell => cell.addEventListener('click', () => play(Number(cell.dataset.index))));

@@ -40,6 +40,10 @@
     .playing-card.selected .card-face { outline: 4px solid var(--red); }
     .message { min-height: 24px; margin: 17px 0 10px; color: var(--muted); text-align: center; }
     .message b { color: var(--ink); }
+    @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.025) rotate(-.4deg); } 70% { transform: scale(1.01) rotate(.4deg); } }
+    @keyframes foundationPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    .game.victory { animation: victoryPulse .8s ease; }
+    .game.victory .foundation:not(.empty) { animation: foundationPop .65s ease; }
     .status { display: flex; justify-content: center; gap: 24px; margin: 14px 0 0; font-size: .85rem; font-weight: 700; }
     .status strong { color: var(--red); }
     .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -69,6 +73,7 @@
   <script>
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message');
+    const gamePanel = document.querySelector('.game');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, clickTimer;
     function card(suitIndex, rank) { return { suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
@@ -102,7 +107,7 @@
       return columns.flat().concat(stockOrder.reverse());
     }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start() { clearInterval(timer); let cards = solvableDeck(); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
+    function start() { clearInterval(timer); gamePanel.classList.remove('victory'); let cards = solvableDeck(); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function saveState() { history.push(copyState()); document.getElementById('undo').disabled = false; }
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
@@ -120,7 +125,7 @@
     function validSequence(cards) { return cards.every((card, index) => index === 0 || (card.rank === cards[index - 1].rank - 1 && card.red !== cards[index - 1].red)); }
     function autoMove() { const moving = picked(); const card = moving[0]; if (!card) return; if (moving.length === 1) { for (let pileIndex = 0; pileIndex < foundations.length; pileIndex++) { const target = foundations[pileIndex].at(-1); if ((!target && card.rank === 0) || (target && target.suit === card.suit && card.rank === target.rank + 1)) { moveToFoundation(pileIndex); return; } } } for (let destination = 0; destination < tableau.length; destination++) { if (selected.source === 'tableau' && selected.index === destination) continue; const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { moveToTableau(destination); return; } } }
     function moveToTableau(destination) { const moving = picked(); const card = moving[0]; if (!card || !validSequence(moving) || (selected.source === 'tableau' && selected.index === destination)) return; const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { saveState(); removeSelected(); tableau[destination].push(...moving); moves++; message.innerHTML = '<b>Guter Zug!</b> Wähle die nächste Karte.'; render(); updateStatus(); } }
-    function moveToFoundation(pileIndex) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1) return; const target = foundations[pileIndex].at(-1); if ((!target && card.rank === 0) || (target && target.suit === card.suit && card.rank === target.rank + 1)) { saveState(); removeSelected(); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) clearInterval(timer); message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); updateStatus(); } }
+    function moveToFoundation(pileIndex) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1) return; const target = foundations[pileIndex].at(-1); if ((!target && card.rank === 0) || (target && target.suit === card.suit && card.rank === target.rank + 1)) { saveState(); removeSelected(); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); updateStatus(); } }
     stockElement.addEventListener('click', () => { saveState(); if (stock.length) { const card = stock.pop(); card.faceUp = true; waste.push(card); } else { stock = waste.reverse(); waste = []; } moves++; selected = null; render(); updateStatus(); });
     document.getElementById('newGame').addEventListener('click', start); start();
     document.getElementById('undo').addEventListener('click', undo);
