@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4B8ED8" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: clamp(40px, 8vw, 82px); }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: clamp(40px, 8vw, 82px); --card-height: clamp(56px, 11.2vw, 115px); --card-step: clamp(7px, 1.4vw, 14px); }
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
@@ -16,21 +16,21 @@
     header p { margin: 0; color: var(--paper); }
     .game { padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
     .top-row { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: start; margin-bottom: 18px; }
-    .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: calc(var(--card-width) * 1.4); border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
-    .pile-label { display: block; margin-top: calc(var(--card-width) * 1.43); color: var(--muted); font-size: .7rem; text-align: center; }
+    .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
+    .pile-label { display: block; margin-top: var(--card-height); color: var(--muted); font-size: .7rem; text-align: center; }
     .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
     .stock::after { content: '↻'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 2rem; font-weight: 900; }
     .waste { justify-self: start; }
     .foundations { display: flex; justify-content: flex-end; gap: 6px; }
-    .foundation { width: var(--card-width); min-width: var(--card-width); height: calc(var(--card-width) * 1.4); }
+    .foundation { width: var(--card-width); min-width: var(--card-width); height: var(--card-height); }
     .foundation .card-face { font-size: 1.25rem; }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: clamp(5px, 1.2vw, 12px); min-height: 255px; }
     .column { min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
     .column.empty { border: 2px dashed rgba(23,23,23,.35); }
-    .playing-card { position: relative; width: var(--card-width); height: calc(var(--card-width) * 1.4); margin-bottom: calc(var(--card-width) * -1.225); padding: 0; border: 0; background: transparent; cursor: pointer; z-index: 1; }
+    .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-step)); padding: 0; border: 0; background: transparent; cursor: pointer; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
-    .card-back { width: var(--card-width); height: calc(var(--card-width) * 1.4); margin-bottom: calc(var(--card-width) * -1.225); border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
+    .card-back { width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-step)); border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
     .card-face { position: relative; display: block; height: 100%; padding: 5px; border: 3px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-weight: 900; text-align: left; }
     .card-face.red { color: var(--red); }
     .card-face .corner { position: absolute; font-size: .72rem; line-height: 1; }
