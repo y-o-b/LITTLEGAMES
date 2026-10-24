@@ -8,7 +8,7 @@
   <style>
     :root { --bg: #4B8ED8; --panel: #FFFFFF; --card: #FFFFFF; --text: #171717; --muted: rgba(23,23,23,.7); --purple: #EF4B3F; --cyan: #171717; --pink: #EF4B3F; }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; padding: 25px 15px; display: grid; place-items: center; color: var(--text); background-color: var(--bg); background-image: radial-gradient(#171717 1.2px, transparent 1.2px); background-size: 18px 18px; font: 16px/1.5 Arial, Helvetica, sans-serif; }
+    body { min-height: 100vh; margin: 0; padding: 25px 15px; display: grid; place-items: center; color: var(--text); background: var(--bg); font: 16px/1.5 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 620px); }
     .home-link { display: inline-block; margin-bottom: 16px; color: var(--muted); font-size: .82rem; text-decoration: none; }
     .home-link:hover { color: var(--text); }
@@ -35,7 +35,7 @@
     .player.active { color: var(--text); border-color: #171717; background: #F5F5F5; }
     .player strong { display: block; color: var(--cyan); font-size: 1.25rem; }
     .board { display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
-    .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--bg); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transform-style: preserve-3d; transition: transform .45s ease; }
+    .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--bg); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transform-style: preserve-3d; transition: transform .25s ease; }
     .memory-card::before, .memory-card::after { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; }
     .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
     .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
@@ -55,7 +55,6 @@
   <main class="app">
     <a class="home-link" href="index.html">← Zur Startseite</a>
     <header>
-      <div class="eyebrow">boyreese.de · game night</div>
       <h1>Memory</h1>
       <p>Finde alle Paare und trainiere dein Gedächtnis.</p>
     </header>
@@ -105,7 +104,7 @@
       if (!first) { first = card; return; }
       second = card; moves++; updateStats(); locked = true;
       if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
-      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 700);
+      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 1400);
     }
     document.querySelectorAll('.mode').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; document.querySelectorAll('.mode').forEach(item => item.classList.toggle('active', item === button)); document.getElementById('players').hidden = mode !== 'two'; start(); }));
     sizeButtons.forEach(button => button.addEventListener('click', () => { size = Number(button.dataset.size); sizeButtons.forEach(item => item.classList.toggle('active', item === button)); start(); }));
