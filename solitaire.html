@@ -75,22 +75,23 @@
     function card(suitIndex, rank) { return { suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
     function solvableDeck() {
-      // Jede Spalte ist eine zufällige, absteigende Farbreihe. Dadurch bleibt
-      // eine Lösung garantiert, während die Verteilung von Partie zu Partie
-      // wechselt.
-      let columns, next;
-      do {
-        columns = []; next = [0, 0, 0, 0];
-        for (let length = 1; length <= 7; length++) {
-          const choices = [0, 1, 2, 3].filter(suit => next[suit] + length <= 13);
-          if (!choices.length) { columns = null; break; }
-          const suit = choices[Math.floor(Math.random() * choices.length)];
-          const firstRank = next[suit];
-          columns.push(Array.from({ length }, (_, index) => card(suit, firstRank + length - index - 1)));
-          next[suit] += length;
-        }
-      } while (!columns);
-      const stockOrder = shuffle([0, 1, 2, 3]).flatMap(suit => Array.from({ length: 13 - next[suit] }, (_, index) => card(suit, next[suit] + index)));
+      // Eine zufällig gemischte Lösungsreihenfolge wird auf die Spalten
+      // verteilt. Jede Karte folgt dabei ihrer Vorgängerkarte auf dem
+      // Grundstapel, die sichtbare Verteilung bleibt aber abwechslungsreich.
+      const next = [0, 0, 0, 0], exposureOrder = [];
+      for (let index = 0; index < 28; index++) {
+        const choices = [0, 1, 2, 3].filter(suit => next[suit] < 13);
+        const suit = choices[Math.floor(Math.random() * choices.length)];
+        exposureOrder.push(card(suit, next[suit])); next[suit]++;
+      }
+      const columns = []; let offset = 0;
+      for (let length = 1; length <= 7; length++) { columns.push(exposureOrder.slice(offset, offset + length).reverse()); offset += length; }
+      const stockOrder = [];
+      while (next.some(rank => rank < 13)) {
+        const choices = [0, 1, 2, 3].filter(suit => next[suit] < 13);
+        const suit = choices[Math.floor(Math.random() * choices.length)];
+        stockOrder.push(card(suit, next[suit])); next[suit]++;
+      }
       return columns.flat().concat(stockOrder.reverse());
     }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
