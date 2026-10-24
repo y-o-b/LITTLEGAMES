@@ -35,10 +35,11 @@
     .player.active { color: var(--text); border-color: #171717; background: #F5F5F5; }
     .player strong { display: block; color: var(--cyan); font-size: 1.25rem; }
     .board { display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
-    .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--card); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transition: transform .18s, background .18s; }
-    .memory-card::before { content: '?'; color: var(--purple); font-size: .8em; font-weight: 800; }
-    .memory-card.flipped, .memory-card.matched { color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
-    .memory-card.flipped::before, .memory-card.matched::before { content: ''; }
+    .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--bg); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transform-style: preserve-3d; transition: transform .45s ease; }
+    .memory-card::before, .memory-card::after { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; }
+    .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
+    .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
+    .memory-card.flipped, .memory-card.matched { transform: rotateY(180deg); }
     .memory-card.matched { color: var(--cyan); background: #DDEEFF; box-shadow: 3px 3px 0 #171717; }
     .memory-card:hover:not(:disabled) { transform: translateY(-2px); }
     .memory-card:disabled { cursor: default; }
@@ -100,11 +101,11 @@
     function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; document.querySelector('#player1 strong').textContent = playerScores[0]; document.querySelector('#player2 strong').textContent = playerScores[1]; document.getElementById('player1').classList.toggle('active', currentPlayer === 1); document.getElementById('player2').classList.toggle('active', currentPlayer === 2); }
     function flip(card) {
       if (locked || card === first || card.classList.contains('matched')) return;
-      card.classList.add('flipped'); card.textContent = card.dataset.icon; card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}`);
+      card.classList.add('flipped'); card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}`);
       if (!first) { first = card; return; }
       second = card; moves++; updateStats(); locked = true;
       if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
-      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.textContent = ''; item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 700);
+      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 700);
     }
     document.querySelectorAll('.mode').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; document.querySelectorAll('.mode').forEach(item => item.classList.toggle('active', item === button)); document.getElementById('players').hidden = mode !== 'two'; start(); }));
     sizeButtons.forEach(button => button.addEventListener('click', () => { size = Number(button.dataset.size); sizeButtons.forEach(item => item.classList.toggle('active', item === button)); start(); }));
