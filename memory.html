@@ -17,6 +17,9 @@
     h1 { margin: 7px 0 8px; font-size: clamp(2.7rem, 11vw, 4.7rem); line-height: .95; letter-spacing: -.07em; }
     header p { margin: 0; color: var(--muted); }
     .game { padding: clamp(17px, 4vw, 28px); border: 1px solid rgba(255,255,255,.1); border-radius: 25px; background: var(--panel); box-shadow: 0 24px 70px rgba(0,0,0,.35); backdrop-filter: blur(18px); }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; margin-bottom: 19px; border-radius: 12px; background: #111525; }
+    .mode { padding: 9px; border-radius: 9px; color: var(--muted); background: transparent; font-weight: 700; }
+    .mode.active { color: var(--text); background: #252b49; }
     .sizes { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; color: var(--muted); font-size: .82rem; }
     .size-buttons { display: flex; gap: 5px; }
     button { border: 0; color: inherit; font: inherit; cursor: pointer; }
@@ -26,6 +29,11 @@
     .stat { padding: 8px 3px; border-radius: 12px; background: rgba(255,255,255,.045); }
     .stat strong { display: block; color: var(--cyan); font-size: 1.3rem; line-height: 1.1; }
     .stat span { color: var(--muted); font-size: .7rem; }
+    .players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: -7px 0 18px; }
+    .players[hidden] { display: none; }
+    .player { padding: 7px; border: 1px solid transparent; border-radius: 10px; color: var(--muted); text-align: center; font-size: .78rem; }
+    .player.active { color: var(--text); border-color: var(--purple); background: rgba(155,140,255,.12); }
+    .player strong { display: block; color: var(--cyan); font-size: 1.25rem; }
     .board { display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
     .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 12px; background: var(--card); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); transition: transform .18s, background .18s; }
     .memory-card::before { content: '?'; color: var(--purple); font-size: .8em; font-weight: 800; }
@@ -51,6 +59,10 @@
       <p>Finde alle Paare und trainiere dein Gedächtnis.</p>
     </header>
     <section class="game" aria-label="Memory-Spiel">
+      <div class="mode-switch" role="group" aria-label="Spielmodus">
+        <button class="mode active" data-mode="single" type="button">1 Spieler</button>
+        <button class="mode" data-mode="two" type="button">2 Spieler</button>
+      </div>
       <div class="sizes">
         <span>Größe</span>
         <div class="size-buttons" role="group" aria-label="Spielfeldgröße">
@@ -64,6 +76,10 @@
         <div class="stat"><strong id="moves">0</strong><span>Züge</span></div>
         <div class="stat"><strong id="time">0:00</strong><span>Zeit</span></div>
       </div>
+      <div class="players" id="players" hidden aria-label="Punktestand der Spieler">
+        <div class="player active" id="player1">Spieler 1<strong>0</strong></div>
+        <div class="player" id="player2">Spieler 2<strong>0</strong></div>
+      </div>
       <p class="message" id="message" aria-live="polite"><b>Bereit?</b> Finde das erste Paar.</p>
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
@@ -73,23 +89,24 @@
     const icons = ['🍕','🚀','🌈','🎧','🐙','🌵','🍩','🦊','⚽','🎸','🌙','🍉','🦄','🎲','🐳','🌻','🍀','👾'];
     const boardElement = document.getElementById('board');
     const sizeButtons = [...document.querySelectorAll('.size')];
-    let size = 8, cards = [], first = null, second = null, locked = false, moves = 0, pairs = 0, seconds = 0, timer;
+    let size = 8, mode = 'single', currentPlayer = 1, playerScores = [0, 0], cards = [], first = null, second = null, locked = false, moves = 0, pairs = 0, seconds = 0, timer;
     function shuffle(items) { return [...items].sort(() => Math.random() - .5); }
     function start() {
-      clearInterval(timer); cards = shuffle(icons.slice(0, size).flatMap(icon => [icon, icon])); first = second = null; locked = false; moves = pairs = seconds = 0;
+      clearInterval(timer); cards = shuffle(icons.slice(0, size).flatMap(icon => [icon, icon])); first = second = null; locked = false; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
       boardElement.style.gridTemplateColumns = `repeat(${size === 18 ? 6 : 4}, 1fr)`; boardElement.innerHTML = '';
       cards.forEach((icon, index) => { const card = document.createElement('button'); card.className = 'memory-card'; card.type = 'button'; card.dataset.index = index; card.dataset.icon = icon; card.setAttribute('role', 'gridcell'); card.setAttribute('aria-label', `Karte ${index + 1}, verdeckt`); card.addEventListener('click', () => flip(card)); boardElement.appendChild(card); });
-      timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); updateStats(); document.getElementById('message').innerHTML = '<b>Bereit?</b> Finde das erste Paar.';
+      timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); updateStats(); document.getElementById('message').innerHTML = mode === 'two' ? '<b>Spieler 1 ist dran.</b> Finde ein Paar.' : '<b>Bereit?</b> Finde das erste Paar.';
     }
-    function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; }
+    function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; document.querySelector('#player1 strong').textContent = playerScores[0]; document.querySelector('#player2 strong').textContent = playerScores[1]; document.getElementById('player1').classList.toggle('active', currentPlayer === 1); document.getElementById('player2').classList.toggle('active', currentPlayer === 2); }
     function flip(card) {
       if (locked || card === first || card.classList.contains('matched')) return;
       card.classList.add('flipped'); card.textContent = card.dataset.icon; card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}`);
       if (!first) { first = card; return; }
       second = card; moves++; updateStats(); locked = true;
-      if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); document.getElementById('message').innerHTML = `<b>Gewonnen!</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } }
-      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.textContent = ''; item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; locked = false; }, 700);
+      if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
+      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.textContent = ''; item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 700);
     }
+    document.querySelectorAll('.mode').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; document.querySelectorAll('.mode').forEach(item => item.classList.toggle('active', item === button)); document.getElementById('players').hidden = mode !== 'two'; start(); }));
     sizeButtons.forEach(button => button.addEventListener('click', () => { size = Number(button.dataset.size); sizeButtons.forEach(item => item.classList.toggle('active', item === button)); start(); }));
     document.getElementById('newGame').addEventListener('click', start); start();
   </script>
