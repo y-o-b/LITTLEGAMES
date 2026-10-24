@@ -40,6 +40,7 @@
     .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
     .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
     .memory-card.flipped, .memory-card.matched { transform: rotateY(180deg); }
+    .memory-card.flipped::after, .memory-card.matched::after { background: var(--symbol-bg, #FFFFFF); }
     .memory-card.matched { color: var(--cyan); background: #DDEEFF; box-shadow: 3px 3px 0 #171717; }
     .memory-card:hover:not(:disabled):not(.flipped):not(.matched) { transform: translateY(-2px); }
     .memory-card:disabled { cursor: default; }
@@ -86,15 +87,26 @@
     </section>
   </main>
   <script>
-    const icons = ['🍕','🚀','🌈','🎧','🐙','🌵','🍩','🦊','⚽','🎸','🌙','🍉','🦄','🎲','🐳','🌻','🍀','👾'];
+    const icons = [
+      { symbol: '🍕', color: '#FFD166' }, { symbol: '🚀', color: '#BDE0FE' }, { symbol: '🌈', color: '#FFC8DD' },
+      { symbol: '🎧', color: '#CDB4DB' }, { symbol: '🐙', color: '#FFAFCC' }, { symbol: '🌵', color: '#B7E4C7' },
+      { symbol: '🍩', color: '#F4A261' }, { symbol: '🦊', color: '#F6BD60' }, { symbol: '⚽', color: '#DDE7F0' },
+      { symbol: '🎸', color: '#E9C46A' }, { symbol: '🌙', color: '#CDE7F0' }, { symbol: '🍉', color: '#B7E4C7' },
+      { symbol: '🦄', color: '#E0C3FC' }, { symbol: '🎲', color: '#FFB4A2' }, { symbol: '🐳', color: '#A2D2FF' },
+      { symbol: '🌻', color: '#FFE69C' }, { symbol: '🍀', color: '#C7F9CC' }, { symbol: '👾', color: '#B8C0FF' },
+      { symbol: '🛸', color: '#D0F4DE' }, { symbol: '🦋', color: '#A9DEF9' }, { symbol: '🍓', color: '#FFADAD' },
+      { symbol: '🐼', color: '#E5E5E5' }, { symbol: '🌺', color: '#FEC5BB' }, { symbol: '🍦', color: '#FFF1E6' },
+      { symbol: '🎨', color: '#CFBAF0' }, { symbol: '🐸', color: '#BDE0A8' }, { symbol: '🍋', color: '#FFF3B0' },
+      { symbol: '🦁', color: '#F9C74F' }, { symbol: '🎈', color: '#F28482' }, { symbol: '🌍', color: '#90DBF4' }
+    ];
     const boardElement = document.getElementById('board');
     const sizeButtons = [...document.querySelectorAll('.size')];
     let size = 8, mode = 'single', currentPlayer = 1, playerScores = [0, 0], cards = [], first = null, second = null, locked = false, moves = 0, pairs = 0, seconds = 0, timer;
     function shuffle(items) { return [...items].sort(() => Math.random() - .5); }
     function start() {
-      clearInterval(timer); cards = shuffle(icons.slice(0, size).flatMap(icon => [icon, icon])); first = second = null; locked = false; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
+      clearInterval(timer); const chosen = shuffle(icons).slice(0, size); cards = shuffle(chosen.flatMap(icon => [icon, icon])); first = second = null; locked = false; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
       boardElement.style.gridTemplateColumns = `repeat(${size === 18 ? 6 : 4}, 1fr)`; boardElement.innerHTML = '';
-      cards.forEach((icon, index) => { const card = document.createElement('button'); card.className = 'memory-card'; card.type = 'button'; card.dataset.index = index; card.dataset.icon = icon; card.setAttribute('role', 'gridcell'); card.setAttribute('aria-label', `Karte ${index + 1}, verdeckt`); card.addEventListener('click', () => flip(card)); boardElement.appendChild(card); });
+      cards.forEach((icon, index) => { const card = document.createElement('button'); card.className = 'memory-card'; card.type = 'button'; card.dataset.index = index; card.dataset.icon = icon.symbol; card.style.setProperty('--symbol-bg', icon.color); card.setAttribute('role', 'gridcell'); card.setAttribute('aria-label', `Karte ${index + 1}, verdeckt`); card.addEventListener('click', () => flip(card)); boardElement.appendChild(card); });
       timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); updateStats(); document.getElementById('message').innerHTML = mode === 'two' ? '<b>Spieler 1 ist dran.</b> Finde ein Paar.' : '<b>Bereit?</b> Finde das erste Paar.';
     }
     function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; document.querySelector('#player1 strong').textContent = playerScores[0]; document.querySelector('#player2 strong').textContent = playerScores[1]; document.getElementById('player1').classList.toggle('active', currentPlayer === 1); document.getElementById('player2').classList.toggle('active', currentPlayer === 2); }
