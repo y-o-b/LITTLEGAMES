@@ -55,7 +55,7 @@
 <body>
   <main class="app">
     <a class="home-link" href="index.html">← Zur Startseite</a>
-    <header><h1>Solitär</h1><p>Baue die vier Farben von Ass bis König auf.</p></header>
+    <header><h1>Solitär</h1><p>Baue die vier Farben von Ass bis König auf. Jede Partie ist lösbar.</p></header>
     <section class="game" aria-label="Solitär-Spiel">
       <div class="top-row">
         <button class="pile stock" id="stock" type="button" aria-label="Kartenstapel"></button>
@@ -72,9 +72,30 @@
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','B','D','K'];
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer;
-    function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => ({ suit, rank, name, red: suitIndex === 1 || suitIndex === 2 }))); }
+    function card(suitIndex, rank) { return { suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
+    function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
+    function solvableDeck() {
+      // Jede Tableau-Spalte beginnt mit einer Karte, die direkt auf einen
+      // Grundstapel gelegt werden kann. Danach werden die Folgekarten sichtbar.
+      const columns = [
+        [card(0, 0)],
+        [card(1, 1), card(1, 0)],
+        [card(2, 2), card(2, 1), card(2, 0)],
+        [card(3, 3), card(3, 2), card(3, 1), card(3, 0)],
+        [card(0, 5), card(0, 4), card(0, 3), card(0, 2), card(0, 1)],
+        [card(1, 7), card(1, 6), card(1, 5), card(1, 4), card(1, 3), card(1, 2)],
+        [card(2, 9), card(2, 8), card(2, 7), card(2, 6), card(2, 5), card(2, 4), card(2, 3)]
+      ];
+      const stockOrder = [
+        ...Array.from({ length: 7 }, (_, i) => card(0, i + 6)),
+        ...Array.from({ length: 5 }, (_, i) => card(1, i + 8)),
+        ...Array.from({ length: 3 }, (_, i) => card(2, i + 10)),
+        ...Array.from({ length: 9 }, (_, i) => card(3, i + 4))
+      ];
+      return columns.flat().concat(stockOrder.reverse());
+    }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start() { clearInterval(timer); let cards = shuffle(deck()); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
+    function start() { clearInterval(timer); let cards = solvableDeck(); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function saveState() { history.push(copyState()); document.getElementById('undo').disabled = false; }
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
