@@ -48,7 +48,6 @@
     .memory-card.flipped, .memory-card.matched { transform: rotateY(180deg); }
     .memory-card.flipped::after, .memory-card.matched::after { background: var(--symbol-bg, #FFFFFF); }
     .memory-card.matched { color: var(--cyan); background: #DDEEFF; box-shadow: 3px 3px 0 #171717; animation: matchedPop .65s ease; }
-    .memory-card:hover:not(:disabled):not(.flipped):not(.matched) { transform: translateY(-2px); }
     .memory-card:disabled { cursor: default; }
     button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
     .new-game { display: block; width: 100%; padding: 12px; border: 3px solid #171717; border-radius: 10px; color: #FFFFFF; background: var(--purple); font-weight: 800; box-shadow: 4px 4px 0 #171717; }
