@@ -135,8 +135,8 @@
       drawBoard();
       outcome.line.forEach(i => cells[i].classList.add('winner'));
     }
-    function play(index) {
-      if (gameOver || board[index] || (mode === 'computer' && current === 'O')) return;
+    function play(index, isComputer = false) {
+      if (gameOver || board[index] || (mode === 'computer' && current === 'O' && !isComputer)) return;
       board[index] = current; drawBoard();
       const outcome = result(board); if (outcome) return finish(outcome);
       current = current === 'X' ? 'O' : 'X';
@@ -148,7 +148,7 @@
       if (gameOver) return;
       // Der Computer gewinnt, blockt und spielt sonst bevorzugt die Mitte/Ecken.
       const move = findTactical('O') ?? findTactical('X') ?? ([4,0,2,6,8,1,3,5,7].find(i => !board[i]));
-      play(move);
+      play(move, true);
     }
     function findTactical(mark) { for (const line of wins) { const values = line.map(i => board[i]); if (values.filter(v => v === mark).length === 2 && values.includes('')) return line[values.indexOf('')]; } return null; }
     function reset() { board = Array(9).fill(''); current = 'X'; gameOver = false; drawBoard(); setTurn('<b>Du bist dran</b> · Wähle ein Feld'); }
