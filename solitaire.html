@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4B8ED8" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: clamp(40px, 8vw, 82px); --card-height: clamp(56px, 11.2vw, 115px); --card-overlap: clamp(42px, 8.4vw, 86px); }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; }
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
@@ -15,16 +15,16 @@
     h1 { margin: 0 0 5px; font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; text-shadow: 3px 3px 0 var(--paper); }
     header p { margin: 0; color: var(--paper); }
     .game { padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
-    .top-row { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: start; margin-bottom: 18px; }
+    .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
     .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
     .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
     .stock::after { content: '↻'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 2rem; font-weight: 900; }
-    .waste { justify-self: start; }
-    .foundations { display: flex; justify-content: flex-end; gap: 6px; }
+    .waste { flex: 0 0 var(--card-width); }
+    .foundations { display: flex; gap: 8px; margin-left: auto; }
     .foundation { width: var(--card-width); min-width: var(--card-width); height: var(--card-height); }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
-    .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: clamp(5px, 1.2vw, 12px); min-height: 255px; }
-    .column { min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
+    .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
+    .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
     .column.empty { border: 0; }
     .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); padding: 0; border: 0; background: transparent; cursor: pointer; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
@@ -36,7 +36,7 @@
     .card-face .top-right { top: 4px; right: 5px; }
     .card-face .bottom-left { bottom: 4px; left: 5px; }
     .card-face .bottom-right { right: 5px; bottom: 4px; }
-    .card-face .suit { position: absolute; top: 50%; left: 50%; font-size: clamp(1.4rem, 4vw, 2.7rem); line-height: 1; transform: translate(-50%, -50%); }
+    .card-face .suit { position: absolute; top: 50%; left: 50%; font-size: 2.2rem; line-height: 1; transform: translate(-50%, -50%); }
     .playing-card.selected .card-face { outline: 4px solid var(--red); }
     .message { min-height: 24px; margin: 17px 0 10px; color: var(--muted); text-align: center; }
     .message b { color: var(--ink); }
@@ -52,9 +52,12 @@
     .controls button:disabled { cursor: not-allowed; opacity: .45; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
-      :root { --card-width: max(34px, calc((100vw - 82px) / 7)); --card-height: max(48px, calc((100vw - 82px) / 5)); --card-overlap: max(36px, calc((100vw - 82px) / 6.6667)); }
-      .tableau { grid-template-columns: repeat(7, minmax(0, 1fr)); width: 100%; gap: 4px; min-height: 225px; }
-      .column, .playing-card, .card-back { width: 100%; }
+      :root { --card-width: 40px; --card-height: 57px; --card-overlap: 43px; }
+      body { padding: 12px 6px 20px; }
+      .game { padding: 12px 8px; }
+      .top-row { gap: 5px; }
+      .foundations { gap: 3px; }
+      .tableau { grid-template-columns: repeat(7, var(--card-width)); gap: 2px; min-height: 225px; }
       .card-face { padding: 3px; border-width: 2px; font-size: .76rem; }
       .card-face .corner { font-size: .78rem; }
       .card-face .suit { font-size: 1.35rem; }
@@ -140,11 +143,9 @@
     function saveState() { history.push(copyState()); document.getElementById('undo').disabled = false; }
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
     function undo() { const previous = history.pop(); if (!previous) return; tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; render(); updateStatus(); }
-    function syncMobileCardSize() { if (window.innerWidth <= 600 && tableauElement.clientWidth) { const width = (tableauElement.clientWidth - 24) / 7; document.documentElement.style.setProperty('--card-width', `${width}px`); document.documentElement.style.setProperty('--card-height', `${width * 1.4}px`); document.documentElement.style.setProperty('--card-overlap', `${width * 1.05}px`); } }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right">${card.name}</span><span class="corner bottom-left">${card.name}</span><span class="corner bottom-right">${card.name}</span><span class="suit">${card.suit}</span>`; return element; }
     function cardButton(card, source, index, cardIndex = 0) { const button = document.createElement('button'); const isSelected = selected && selected.source === source && selected.index === index && (source === 'tableau' ? cardIndex >= selected.cardIndex : selected.cardIndex === cardIndex); button.className = 'playing-card' + (isSelected ? ' selected' : ''); button.type = 'button'; button.draggable = true; button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card)); button.addEventListener('click', () => { clearTimeout(clickTimer); clickTimer = setTimeout(() => clickCard(source, index, cardIndex), 220); }); button.addEventListener('dblclick', event => { event.preventDefault(); clearTimeout(clickTimer); selected = { source, index, cardIndex }; autoMove(); }); button.addEventListener('dragstart', event => { clearTimeout(clickTimer); selected = { source, index, cardIndex }; event.dataTransfer.effectAllowed = 'move'; }); button.addEventListener('dragend', () => { selected = null; render(); }); return button; }
     function render() {
-      syncMobileCardSize();
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('button'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.type = 'button'; area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); if (pile.length) area.appendChild(face(pile[pile.length - 1])); area.addEventListener('click', () => moveToFoundation(pileIndex)); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
