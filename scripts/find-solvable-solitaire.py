@@ -24,6 +24,7 @@ RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 COLORS = (0, 1, 1, 0)  # black, red, red, black
 RULES = "klondike-draw-1-unlimited-redeals-no-foundation-return"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "solvable-deals.json"
+DEFAULT_GAME_OUTPUT = Path(__file__).resolve().parent.parent / "solitaire-deals.json"
 
 # State: (columns, stock, waste, foundations); a column is (cards, face_up_count).
 State = tuple[tuple[tuple[int, ...], int], ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]
@@ -147,7 +148,7 @@ def moves_from(state: State) -> Iterator[tuple[State, str]]:
         yield (columns, tuple(reversed(waste)), (), foundations), "Abwurfstapel wieder als Talon verwenden"
 
 
-def solve(deck: list[int], max_states: int) -> tuple[list[str] | None, int]:
+def solve(deck: list[int], max_states: int) -> tuple[list[str] | None, int, bool]:
     start = initial_state(deck)
     queue: list[tuple[float, int, int, State]] = []
     sequence = 0
@@ -155,6 +156,7 @@ def solve(deck: list[int], max_states: int) -> tuple[list[str] | None, int]:
     best_depth = {start: 0}
     parent: dict[State, tuple[State, str] | None] = {start: None}
     expanded = 0
+    truncated = False
 
     while queue and expanded < max_states:
         _, _, depth, state = heapq.heappop(queue)
@@ -168,7 +170,7 @@ def solve(deck: list[int], max_states: int) -> tuple[list[str] | None, int]:
                 solution.append(move)
                 current = previous
             solution.reverse()
-            return solution, expanded
+            return solution, expanded, False
         expanded += 1
 
         for next_state, move in moves_from(state):
@@ -177,26 +179,41 @@ def solve(deck: list[int], max_states: int) -> tuple[list[str] | None, int]:
             if old_depth is not None and old_depth <= next_depth:
                 continue
             if old_depth is None and len(best_depth) >= max_states:
+                truncated = True
                 continue
             best_depth[next_state] = next_depth
             parent[next_state] = (state, move)
             sequence += 1
             heapq.heappush(queue, (priority(next_state, next_depth), sequence, next_depth, next_state))
 
-    return None, expanded
+    # True only if the entire reachable state space was exhausted. If the
+    # state budget stopped the search, the deal is unknown, not proven lost.
+    return None, expanded, not queue and not truncated
 
 
 def read_collection(path: Path) -> dict:
     if not path.exists():
-        return {"version": 1, "rules": RULES, "deals": []}
+        return {"version": 1, "rules": RULES, "deals": [], "rejectedDeals": []}
     with path.open(encoding="utf-8") as file:
         data = json.load(file)
     if data.get("version") != 1 or data.get("rules") != RULES or not isinstance(data.get("deals"), list):
         raise ValueError(f"{path} hat ein unbekanntes JSON-Format oder eine andere Regelvariante.")
+    data.setdefault("rejectedDeals", [])
+    if not isinstance(data["rejectedDeals"], list):
+        raise ValueError(f"{path}: 'rejectedDeals' muss eine Liste sein.")
     return data
 
 
 def write_collection(path: Path, data: dict) -> None:
+    write_json(path, data)
+
+
+def write_game_deals(path: Path, data: dict) -> None:
+    # The browser only needs the ordered card IDs for each playable deal.
+    write_json(path, [deal["deckOrder"] for deal in data["deals"]])
+
+
+def write_json(path: Path, data: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_name = None
     try:
@@ -216,12 +233,17 @@ def main() -> int:
     parser.add_argument("--max-attempts", type=int, default=1000, help="Maximale Zahl zufälliger Decks pro Aufruf (Standard: 1000).")
     parser.add_argument("--max-states", type=int, default=100_000, help="Maximale Zahl geprüfter Zustände pro Deck (Standard: 100000).")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help=f"JSON-Zieldatei (Standard: {DEFAULT_OUTPUT}).")
+    parser.add_argument("--game-output", type=Path, default=DEFAULT_GAME_OUTPUT, help=f"Kompakte JSON-Datei für solitaire.html (Standard: {DEFAULT_GAME_OUTPUT}).")
     args = parser.parse_args()
     if min(args.count, args.max_attempts, args.max_states) < 1:
         parser.error("count, max-attempts und max-states müssen mindestens 1 sein.")
+    if args.output.resolve() == args.game_output.resolve():
+        parser.error("--output und --game-output müssen verschiedene Dateien sein.")
 
     data = read_collection(args.output)
+    write_game_deals(args.game_output, data)
     existing = {tuple(deal.get("deckOrder", [])) for deal in data["deals"]}
+    existing.update(tuple(deal.get("deckOrder", [])) for deal in data["rejectedDeals"])
     rng = secrets.SystemRandom()
     found = 0
 
@@ -230,10 +252,20 @@ def main() -> int:
         rng.shuffle(deck)
         if tuple(deck) in existing:
             continue
-        solution, expanded = solve(deck, args.max_states)
+        solution, expanded, exhausted = solve(deck, args.max_states)
         if solution is None:
+            rejected = {
+                "id": secrets.token_hex(6),
+                "deckOrder": deck,
+                "status": "exhausted" if exhausted else "search_limit",
+                "statesExpanded": expanded,
+            }
+            data["rejectedDeals"].append(rejected)
+            existing.add(tuple(deck))
+            data["generatedAt"] = datetime.now(timezone.utc).isoformat()
+            write_collection(args.output, data)
             print(
-                f"Versuch {attempt}/{args.max_attempts}: keine Lösung innerhalb von {expanded} Zuständen gefunden; Deck nicht als unlösbar eingestuft.",
+                f"Versuch {attempt}/{args.max_attempts}: Deck gespeichert ({rejected['status']}, {expanded} Zustände).",
                 file=sys.stderr,
             )
             continue
@@ -249,6 +281,7 @@ def main() -> int:
         found += 1
         data["generatedAt"] = datetime.now(timezone.utc).isoformat()
         write_collection(args.output, data)
+        write_game_deals(args.game_output, data)
         print(f"Deck {found}/{args.count} gespeichert: {deal['id']} ({len(solution)} Züge, {expanded} Zustände).", file=sys.stderr)
         if found >= args.count:
             break

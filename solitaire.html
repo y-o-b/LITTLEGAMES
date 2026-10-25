@@ -123,17 +123,17 @@
     function solvableDeck() {
       if (solvableDeals.length) {
         const deal = solvableDeals[dealCursor++ % solvableDeals.length];
-        return deal.deckOrder.map(id => card(Math.floor(id / 13), id % 13));
+        return deal.map(id => card(Math.floor(id / 13), id % 13));
       }
       return fallbackSolvableDeck();
     }
     async function loadSolvableDeals() {
       try {
-        const response = await fetch('solvable-deals.json', { cache: 'no-store' });
+        const response = await fetch('solitaire-deals.json', { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        if (data.version === 1 && Array.isArray(data.deals)) {
-          solvableDeals = data.deals.filter(deal => Array.isArray(deal.deckOrder) && deal.deckOrder.length === 52 && new Set(deal.deckOrder).size === 52 && deal.deckOrder.every(id => Number.isInteger(id) && id >= 0 && id < 52));
+        if (Array.isArray(data)) {
+          solvableDeals = data.filter(deck => Array.isArray(deck) && deck.length === 52 && new Set(deck).size === 52 && deck.every(id => Number.isInteger(id) && id >= 0 && id < 52));
         }
       } catch (error) {
         console.info('Keine JSON-Decksammlung geladen; verwende den eingebauten Fallback.', error);
