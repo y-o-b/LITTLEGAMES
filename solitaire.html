@@ -51,7 +51,14 @@
     .controls .undo { color: var(--ink); background: var(--paper); }
     .controls button:disabled { cursor: not-allowed; opacity: .45; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
-    @media (max-width: 600px) { .tableau { gap: 4px; min-height: 225px; } .card-face { padding: 3px; border-width: 2px; font-size: .76rem; } .card-face .corner { font-size: .78rem; } .card-face .suit { font-size: 1.35rem; } }
+    @media (max-width: 600px) {
+      :root { --card-width: max(34px, calc((100vw - 82px) / 7)); --card-height: max(48px, calc((100vw - 82px) / 5)); --card-overlap: max(36px, calc((100vw - 82px) / 6.6667)); }
+      .tableau { grid-template-columns: repeat(7, minmax(0, 1fr)); width: 100%; gap: 4px; min-height: 225px; }
+      .column, .playing-card, .card-back { width: 100%; }
+      .card-face { padding: 3px; border-width: 2px; font-size: .76rem; }
+      .card-face .corner { font-size: .78rem; }
+      .card-face .suit { font-size: 1.35rem; }
+    }
   </style>
 </head>
 <body>
