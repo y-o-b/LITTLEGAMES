@@ -54,6 +54,7 @@
     .new-game:hover { filter: brightness(1.1); }
     .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
     .message b { color: var(--text); }
+    .version { margin-top: 14px; color: var(--muted); font-size: .72rem; text-align: center; }
     @media (max-width: 400px) { .game { padding: 15px; } .board { gap: 5px; } .memory-card { border-radius: 8px; } .size { padding: 6px 7px; } }
   </style>
 </head>
@@ -90,6 +91,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
+    <div class="version">Version 0.14</div>
   </main>
   <script>
     const icons = [
