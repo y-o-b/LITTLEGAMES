@@ -55,12 +55,12 @@
     .controls button:disabled { cursor: not-allowed; opacity: .45; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
-      :root { --card-width: 40px; --card-height: 57px; --card-overlap: 43px; }
-      body { padding: 12px 6px 20px; }
-      .game { padding: 12px 8px; }
+      :root { --card-width: calc((100vw - 12px) / 7); --card-height: calc((100vw - 12px) / 5); --card-overlap: calc((100vw - 12px) / 6.6667); }
+      body { padding: 12px 0 20px; }
+      .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
       .foundations { gap: 3px; }
-      .tableau { grid-template-columns: repeat(7, var(--card-width)); gap: 2px; min-height: 225px; }
+      .tableau { grid-template-columns: repeat(7, var(--card-width)); width: 100%; gap: 2px; min-height: 225px; }
       .card-face { padding: 3px; border-width: 2px; font-size: .76rem; }
       .card-face .corner { font-size: .78rem; }
       .card-face .suit { font-size: 1.35rem; }
