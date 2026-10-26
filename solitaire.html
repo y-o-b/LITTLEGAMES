@@ -88,14 +88,14 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.41</div>
+    <div class="version" data-version>Version 0.42</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message'), autoFinishButton = document.getElementById('autoFinish');
     const gamePanel = document.querySelector('.game');
-    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, touchDrag = null, suppressClick = false, revealedCards = [], lastCardTap = null, lastActionTap = null, lastStockTapAt = 0;
+    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, touchDrag = null, suppressClick = false, revealedCards = [], lastCardTap = null, lastStockTapAt = 0;
     let solvableDeals = [], dealCursor = 0, currentDeck = [];
     const STORAGE_KEY = 'boyreese.solitaire.save.v1';
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
@@ -181,17 +181,15 @@
       button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card));
       button.addEventListener('click', event => {
         if (suppressClick) { suppressClick = false; return; }
-        const now = performance.now(), point = { x: event.clientX, y: event.clientY, time: now };
-        if (lastActionTap && now - lastActionTap.time < 600 && Math.hypot(point.x - lastActionTap.x, point.y - lastActionTap.y) < 32) return;
+        const now = performance.now();
         if (lastCardTap?.id === card.id && now - lastCardTap.time < 500) {
           lastCardTap = null; selected = { source, index, cardIndex };
-          if (autoMove()) lastActionTap = point;
+          autoMove();
           return;
         }
         if (selected && !(selected.source === source && selected.index === index && selected.cardIndex === cardIndex) && (source === 'tableau' || source === 'foundation')) {
           lastCardTap = null;
-          const moved = source === 'tableau' ? moveToTableau(index) : moveToFoundation(index);
-          if (moved) lastActionTap = point;
+          if (source === 'tableau') moveToTableau(index); else moveToFoundation(index);
           return;
         }
         selected = { source, index, cardIndex };
@@ -226,7 +224,6 @@
           else if (foundation) moveToFoundation(Number(foundation.dataset.foundation), origins);
           else { selected = null; render(); }
           suppressClick = true;
-          lastActionTap = { x: event.clientX, y: event.clientY, time: performance.now() };
         }
         touchDrag = null;
       });
@@ -241,7 +238,7 @@
     function render() {
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
-      foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); if (pile.length) area.appendChild(cardButton(pile[pile.length - 1], 'foundation', pileIndex)); area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; const point = { x: event.clientX, y: event.clientY, time: performance.now() }; if (lastActionTap && point.time - lastActionTap.time < 600 && Math.hypot(point.x - lastActionTap.x, point.y - lastActionTap.y) < 32) { event.stopPropagation(); return; } if (moveToFoundation(pileIndex)) { lastActionTap = point; event.preventDefault(); event.stopPropagation(); } }, true); area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
+      foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); if (pile.length) area.appendChild(cardButton(pile[pile.length - 1], 'foundation', pileIndex)); area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true); area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
       autoFinishButton.hidden = hasHiddenCards() || foundations.every(pile => pile.length === 13);
       persistGame();
     }
