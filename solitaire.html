@@ -88,14 +88,14 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.35</div>
+    <div class="version" data-version>Version 0.36</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message'), autoFinishButton = document.getElementById('autoFinish');
     const gamePanel = document.querySelector('.game');
-    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, clickTimer, stockClickTimer, touchDrag = null, suppressClick = false, revealedCards = [];
+    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, clickTimer, stockClickTimer, touchDrag = null, suppressClick = false, revealedCards = [], doubleClickHandled = false, stockDoubleClickHandled = false;
     let solvableDeals = [], dealCursor = 0, currentDeck = [];
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
@@ -165,8 +165,22 @@
       button.className = 'playing-card' + (isSelected ? ' selected' : '') + (isRevealed ? ' revealed' : '');
       button.type = 'button'; button.draggable = true; button.dataset.cardId = card.id;
       button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card));
-      button.addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } clearTimeout(clickTimer); clickTimer = setTimeout(() => clickCard(source, index, cardIndex), 550); });
-      button.addEventListener('dblclick', event => { event.preventDefault(); clearTimeout(clickTimer); suppressClick = true; setTimeout(() => { suppressClick = false; }, 450); selected = { source, index, cardIndex }; autoMove(); });
+      button.addEventListener('click', event => {
+        if (suppressClick) { suppressClick = false; return; }
+        clearTimeout(clickTimer);
+        if (event.detail >= 2) {
+          clickTimer = null; doubleClickHandled = true;
+          setTimeout(() => { doubleClickHandled = false; }, 600);
+          selected = { source, index, cardIndex }; autoMove();
+          return;
+        }
+        clickTimer = setTimeout(() => { clickTimer = null; clickCard(source, index, cardIndex); }, 350);
+      });
+      button.addEventListener('dblclick', event => {
+        event.preventDefault(); clearTimeout(clickTimer); clickTimer = null;
+        if (doubleClickHandled) { doubleClickHandled = false; return; }
+        selected = { source, index, cardIndex }; autoMove();
+      });
       button.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') return;
         const cards = source === 'tableau' ? tableau[index].slice(cardIndex).filter(item => item.faceUp) : [card];
@@ -221,8 +235,16 @@
     function moveToTableau(destination, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || !validSequence(moving) || (selected.source === 'tableau' && selected.index === destination)) return; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { saveState(); removeSelected(false); tableau[destination].push(...moving); moves++; message.innerHTML = '<b>Guter Zug!</b> Wähle die nächste Karte.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard)); updateStatus(); } }
     function moveToFoundation(pileIndex, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1) return; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const target = foundations[pileIndex].at(-1); if ((!target && card.rank === 0) || (target && target.suit === card.suit && card.rank === target.rank + 1)) { saveState(); removeSelected(false); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard)); updateStatus(); } }
     function drawStock() { saveState(); if (stock.length) { const card = stock.pop(); card.faceUp = true; waste.push(card); } else { stock = waste.reverse(); waste = []; } moves++; selected = null; render(); updateStatus(); }
-    stockElement.addEventListener('click', () => { clearTimeout(stockClickTimer); stockClickTimer = setTimeout(drawStock, 550); });
-    stockElement.addEventListener('dblclick', event => { event.preventDefault(); clearTimeout(stockClickTimer); drawStock(); });
+    stockElement.addEventListener('click', event => {
+      clearTimeout(stockClickTimer);
+      if (event.detail >= 2) { stockClickTimer = null; stockDoubleClickHandled = true; setTimeout(() => { stockDoubleClickHandled = false; }, 600); drawStock(); return; }
+      stockClickTimer = setTimeout(() => { stockClickTimer = null; drawStock(); }, 350);
+    });
+    stockElement.addEventListener('dblclick', event => {
+      event.preventDefault(); clearTimeout(stockClickTimer); stockClickTimer = null;
+      if (stockDoubleClickHandled) { stockDoubleClickHandled = false; return; }
+      drawStock();
+    });
     function autoFinishGame() { if (hasHiddenCards()) return; saveState(); const remaining = [...tableau.flat(), ...stock, ...waste]; foundations = foundations.map((pile, suitIndex) => [...pile, ...remaining.filter(item => item.suit === suits[suitIndex]).sort((a, b) => a.rank - b.rank)]); tableau = Array.from({ length: 7 }, () => []); stock = []; waste = []; selected = null; moves++; clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.'; render(); updateStatus(); }
     document.getElementById('newGame').addEventListener('click', () => start()); document.getElementById('sameGame').addEventListener('click', () => start(currentDeck)); autoFinishButton.addEventListener('click', autoFinishGame); loadSolvableDeals();
     document.getElementById('undo').addEventListener('click', undo);
