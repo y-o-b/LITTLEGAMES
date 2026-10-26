@@ -88,7 +88,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.37</div>
+    <div class="version" data-version>Version 0.38</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -97,6 +97,7 @@
     const gamePanel = document.querySelector('.game');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, clickTimer, stockClickTimer, touchDrag = null, suppressClick = false, revealedCards = [], doubleClickHandled = false, stockDoubleClickHandled = false;
     let solvableDeals = [], dealCursor = 0, currentDeck = [];
+    const STORAGE_KEY = 'boyreese.solitaire.save.v1';
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
     function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
     function fallbackSolvableDeck() {
@@ -146,13 +147,26 @@
       } catch (error) {
         console.info('Keine JSON-Decksammlung geladen; verwende den eingebauten Fallback.', error);
       }
-      start();
     }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
     function start(deckToUse = null) { clearInterval(timer); gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function saveState() { history.push(copyState()); document.getElementById('undo').disabled = false; }
-    function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
+    function persistGame() {
+      if (!tableau || !stock || !waste || !foundations) return;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tableau, stock, waste, foundations, history, moves, seconds, currentDeck, won: gamePanel.classList.contains('victory') })); } catch (error) { console.warn('Solitär-Spielstand konnte nicht gespeichert werden.', error); }
+    }
+    function restoreGame() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved || saved.version !== 1 || !Array.isArray(saved.tableau) || saved.tableau.length !== 7 || !Array.isArray(saved.stock) || !Array.isArray(saved.waste) || !Array.isArray(saved.foundations) || saved.foundations.length !== 4 || !Array.isArray(saved.currentDeck)) return false;
+        tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; selected = null;
+        if (saved.won) { clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Partie bereits abgeschlossen.'; }
+        else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); }
+        render(); updateStatus(); return true;
+      } catch (error) { console.warn('Solitär-Spielstand konnte nicht geladen werden.', error); return false; }
+    }
+    function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; persistGame(); }
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
     function undo() { const previous = history.pop(); if (!previous) return; tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; render(); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
@@ -225,6 +239,7 @@
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); if (pile.length) area.appendChild(cardButton(pile[pile.length - 1], 'foundation', pileIndex)); area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
       autoFinishButton.hidden = hasHiddenCards() || foundations.every(pile => pile.length === 13);
+      persistGame();
     }
     function clickCard(source, index, cardIndex = 0) { if (selected) { if (selected.source === source && selected.index === index && selected.cardIndex === cardIndex) { selected = null; render(); return; } if (source === 'tableau') { moveToTableau(index); return; } } selected = { source, index, cardIndex }; render(); }
     function picked() { return selected?.source === 'waste' ? [waste[waste.length - 1]] : selected?.source === 'foundation' ? [foundations[selected.index].at(-1)] : selected ? tableau[selected.index].slice(selected.cardIndex) : []; }
@@ -246,9 +261,10 @@
       drawStock();
     });
     function autoFinishGame() { if (hasHiddenCards()) return; saveState(); const remaining = [...tableau.flat(), ...stock, ...waste]; foundations = foundations.map((pile, suitIndex) => [...pile, ...remaining.filter(item => item.suit === suits[suitIndex]).sort((a, b) => a.rank - b.rank)]); tableau = Array.from({ length: 7 }, () => []); stock = []; waste = []; selected = null; moves++; clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.'; render(); updateStatus(); }
-    document.getElementById('newGame').addEventListener('click', () => start()); document.getElementById('sameGame').addEventListener('click', () => start(currentDeck)); autoFinishButton.addEventListener('click', autoFinishGame); loadSolvableDeals();
+    document.getElementById('newGame').addEventListener('click', () => start()); document.getElementById('sameGame').addEventListener('click', () => start(currentDeck)); autoFinishButton.addEventListener('click', autoFinishGame);
     document.getElementById('undo').addEventListener('click', undo);
     window.addEventListener('resize', render);
+    loadSolvableDeals().then(() => { if (!restoreGame()) start(); });
   </script>
 </body>
 </html>
