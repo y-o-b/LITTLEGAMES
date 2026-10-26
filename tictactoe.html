@@ -118,7 +118,8 @@
       </div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <div class="version">Version 0.18</div>
+    <div class="version" data-version>Version 0.19</div>
+    <script>fetch('VERSION').then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
     <footer>Du spielst immer X und beginnst.</footer>
   </main>
 

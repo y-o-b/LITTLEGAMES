@@ -48,7 +48,8 @@
       </div>
     </div>
     <footer>Eine kleine Spielpause gefällig?</footer>
-    <div class="version">Version 0.18</div>
+    <div class="version" data-version>Version 0.19</div>
+    <script>fetch('VERSION').then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
 </body>
 </html>
