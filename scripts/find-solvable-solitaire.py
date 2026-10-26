@@ -210,17 +210,20 @@ def write_collection(path: Path, data: dict) -> None:
 
 def write_game_deals(path: Path, data: dict) -> None:
     # The browser only needs the ordered card IDs for each playable deal.
-    write_json(path, [deal["deckOrder"] for deal in data["deals"]])
+    write_json(path, [deal["deckOrder"] for deal in data["deals"]], compact=True)
 
 
-def write_json(path: Path, data: object) -> None:
+def write_json(path: Path, data: object, compact: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_name = None
     try:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as file:
             temp_name = file.name
-            json.dump(data, file, ensure_ascii=False, indent=2)
-            file.write("\n")
+            if compact:
+                json.dump(data, file, ensure_ascii=False, separators=(",", ":"))
+            else:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+                file.write("\n")
         os.replace(temp_name, path)
     finally:
         if temp_name and os.path.exists(temp_name):
