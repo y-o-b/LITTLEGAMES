@@ -2,6 +2,13 @@
 
 Dieses Dokument beschreibt den Karten-Eingabeweg in `solitaire.html`.
 
+## Bezeichnungen der Stapel
+
+- **Ziehstapel** (`stock`): verdeckter Kartenstapel oben links. Ein Tap zieht die oberste Karte auf die Ablage. Ist er leer, wird die Ablage zurückgedreht.
+- **Ablagestapel** (`waste`): Stapel neben dem Ziehstapel mit der zuletzt gezogenen, offenen Karte.
+- **Zielstapel** (`foundations`): die vier Stapel oben rechts. Auf ihnen werden die Karten nach Farbe vom Ass aufwärts abgelegt.
+- **Spielspalten** bzw. **Tableau** (`tableau`): die sieben Spalten im Hauptspielfeld. Hier werden Kartenfolgen absteigend mit wechselnden Farben gebaut.
+
 ## Datenmodell der Auswahl
 
 Eine Auswahl wird in `selected` als `{ source, index, cardIndex }` gespeichert:
