@@ -39,7 +39,7 @@
     .card-face .top-left { top: 4px; left: 5px; }
     .card-face .top-right { top: 3px; right: 4px; font-size: 2.15rem; }
     .card-face .suit { position: absolute; left: 50%; line-height: 1; transform: translateX(-50%); }
-    .card-face .center-suit { top: 60%; font-size: 3.8rem; transform: translate(-50%, -50%); }
+    .card-face .center-suit { top: 60%; font-size: 4.3rem; transform: translate(-50%, -50%); }
     .playing-card.selected .card-face { outline: 4px solid var(--red); }
     .playing-card.revealed .card-face { animation: revealFlip .6s ease both; backface-visibility: hidden; }
     .playing-card.touch-dragging { z-index: 1000; opacity: .9; pointer-events: none; }
@@ -68,7 +68,7 @@
       .card-face { padding: 3px; border-width: 2px; font-size: .76rem; }
       .card-face .corner { font-size: 1.05rem; }
       .card-face .top-right { font-size: 1.45rem; }
-      .card-face .center-suit { font-size: 2.25rem; }
+      .card-face .center-suit { font-size: 2.9rem; }
     }
   </style>
 </head>
@@ -87,7 +87,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.28</div>
+    <div class="version" data-version>Version 0.29</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
