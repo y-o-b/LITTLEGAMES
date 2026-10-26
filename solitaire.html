@@ -88,7 +88,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.33</div>
+    <div class="version" data-version>Version 0.34</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -165,7 +165,7 @@
       button.className = 'playing-card' + (isSelected ? ' selected' : '') + (isRevealed ? ' revealed' : '');
       button.type = 'button'; button.draggable = true; button.dataset.cardId = card.id;
       button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card));
-      button.addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } clearTimeout(clickTimer); clickTimer = setTimeout(() => clickCard(source, index, cardIndex), 220); });
+      button.addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } clearTimeout(clickTimer); clickTimer = setTimeout(() => clickCard(source, index, cardIndex), 550); });
       button.addEventListener('dblclick', event => { event.preventDefault(); clearTimeout(clickTimer); suppressClick = true; setTimeout(() => { suppressClick = false; }, 450); selected = { source, index, cardIndex }; autoMove(); });
       button.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') return;
