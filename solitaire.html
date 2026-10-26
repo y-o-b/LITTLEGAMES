@@ -88,7 +88,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.36</div>
+    <div class="version" data-version>Version 0.37</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -174,7 +174,7 @@
           selected = { source, index, cardIndex }; autoMove();
           return;
         }
-        clickTimer = setTimeout(() => { clickTimer = null; clickCard(source, index, cardIndex); }, 350);
+        clickTimer = setTimeout(() => { clickTimer = null; clickCard(source, index, cardIndex); }, 800);
       });
       button.addEventListener('dblclick', event => {
         event.preventDefault(); clearTimeout(clickTimer); clickTimer = null;
@@ -238,7 +238,7 @@
     stockElement.addEventListener('click', event => {
       clearTimeout(stockClickTimer);
       if (event.detail >= 2) { stockClickTimer = null; stockDoubleClickHandled = true; setTimeout(() => { stockDoubleClickHandled = false; }, 600); drawStock(); return; }
-      stockClickTimer = setTimeout(() => { stockClickTimer = null; drawStock(); }, 350);
+      stockClickTimer = setTimeout(() => { stockClickTimer = null; drawStock(); }, 800);
     });
     stockElement.addEventListener('dblclick', event => {
       event.preventDefault(); clearTimeout(stockClickTimer); stockClickTimer = null;
