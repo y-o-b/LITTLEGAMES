@@ -8,11 +8,11 @@
   <style>
     :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
+    body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--ink); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
     .home-link { display: inline-block; margin-bottom: 12px; color: var(--paper); font-size: .82rem; font-weight: 700; text-decoration: none; }
     header { text-align: center; margin-bottom: 17px; }
-    h1 { margin: 0 0 5px; font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; text-shadow: 3px 3px 0 var(--paper); }
+    h1 { margin: 0 0 5px; color: var(--paper); font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; text-shadow: 3px 3px 0 var(--red); }
     header p { margin: 0; color: var(--paper); }
     .game { padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
     .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
@@ -83,7 +83,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version">Version 0.14</div>
+    <div class="version">Version 0.15</div>
   </main>
   <script>
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
