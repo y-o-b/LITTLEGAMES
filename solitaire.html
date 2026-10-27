@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4B8ED8" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; --foundation-step: 24px; }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; --foundation-step: 0px; }
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
@@ -28,6 +28,7 @@
     .foundation:not(.empty) { border: 0; }
     .foundation .playing-card { position: absolute; top: var(--stack-offset, 0px); right: auto; bottom: auto; left: 0; z-index: 2; margin: 0; }
     .foundation-card-layer { position: absolute; top: var(--stack-offset, 0px); left: 0; z-index: 1; width: var(--card-width); height: var(--card-height); pointer-events: none; }
+    .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-size: 1.6rem; font-weight: 900; pointer-events: none; }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
     .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
@@ -67,7 +68,7 @@
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
-      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); --foundation-step: 14px; }
+      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); --foundation-step: 0px; }
       body { padding: 12px 5px 20px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
@@ -95,7 +96,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.54</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.55</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -253,12 +254,12 @@
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = '';
       const foundationStep = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--foundation-step'));
-      const cardHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-height'));
       foundations.forEach((pile, pileIndex) => {
         const area = document.createElement('div');
         area.className = 'pile foundation' + (pile.length ? '' : ' empty');
         area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`);
-        area.style.height = `${cardHeight + Math.max(0, pile.length - 1) * foundationStep}px`;
+        area.style.height = 'var(--card-height)';
+        if (pile.length) { const base = document.createElement('div'); base.className = 'foundation-base'; base.textContent = 'A'; base.setAttribute('aria-hidden', 'true'); area.appendChild(base); }
         pile.forEach((item, cardIndex) => {
           const offset = `${cardIndex * foundationStep}px`;
           if (cardIndex === pile.length - 1) {
