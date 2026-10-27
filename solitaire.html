@@ -96,7 +96,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.52</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.53</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -256,6 +256,7 @@
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); const cover = foundationCovers.get(pileIndex); if (cover && pile.at(-1)?.id === cover.coveredBy) { const underCard = document.createElement('div'); underCard.className = 'foundation-cover' + (cover.card ? '' : ' empty'); if (cover.card) underCard.appendChild(face(cover.card)); else underCard.textContent = 'A'; area.appendChild(underCard); } else if (pile.length && foundationBases[pileIndex]) { const underCard = document.createElement('div'); underCard.className = 'foundation-cover empty'; underCard.textContent = 'A'; area.appendChild(underCard); } if (pile.length) area.appendChild(cardButton(pile[pile.length - 1], 'foundation', pileIndex)); area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true); area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
       autoFinishButton.hidden = hasHiddenCards() || foundations.every(pile => pile.length === 13);
+      document.getElementById('undo').disabled = history.length === 0;
       persistGame();
     }
     function picked() { return selected?.source === 'waste' ? [waste[waste.length - 1]] : selected?.source === 'foundation' ? [foundations[selected.index].at(-1)] : selected ? tableau[selected.index].slice(selected.cardIndex) : []; }
