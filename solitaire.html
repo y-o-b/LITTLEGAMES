@@ -51,6 +51,7 @@
     .flip-front { transform: rotateY(180deg); }
     .playing-card.touch-dragging { z-index: 1000; opacity: .9; pointer-events: none; }
     .playing-card.animating-card { z-index: 9999 !important; }
+    .card-flight { position: fixed !important; z-index: 100000 !important; margin: 0 !important; pointer-events: none !important; }
     .message { min-height: 24px; margin: 17px 0 10px; color: var(--muted); text-align: center; }
     .message b { color: var(--ink); }
     @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.025) rotate(-.4deg); } 70% { transform: scale(1.01) rotate(.4deg); } }
@@ -97,7 +98,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.59</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.60</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -180,7 +181,7 @@
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
     function undo() { const previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
-    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map((item, index) => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); element.classList.add('animating-card'); element.style.zIndex = String(1000 + index); const animation = element.animate([{ transform: `translate(${origin.left - target.left}px, ${origin.top - target.top}px)` }, { transform: 'translate(0, 0)' }], { duration: 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { element.classList.remove('animating-card'); element.style.zIndex = ''; }); }); Promise.all(animations).then(resolve); })); }
+    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); element.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right suit-top">${card.suit}</span><span class="suit center-suit">${card.suit}</span>`; return element; }
     function cardButton(card, source, index, cardIndex = 0) {
       const button = document.createElement('button');
