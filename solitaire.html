@@ -68,8 +68,8 @@
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
-      :root { --card-width: calc((100vw - 12px) / 7); --card-height: calc((100vw - 12px) / 5); --card-overlap: calc((100vw - 12px) / 6.6667); }
-      body { padding: 12px 0 20px; }
+      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); }
+      body { padding: 12px 5px 20px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
       .foundations { gap: 3px; }
@@ -96,7 +96,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.51</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.52</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
