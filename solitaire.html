@@ -96,7 +96,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.55</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.56</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -196,9 +196,9 @@
       button.addEventListener('click', event => {
         if (suppressClick) { suppressClick = false; return; }
         const now = performance.now();
-        if (lastCardTap?.id === card.id && now - lastCardTap.time < 500) {
-          lastCardTap = null; selected = { source, index, cardIndex };
-          autoMove();
+        if (selected && selected.source === source && selected.index === index && selected.cardIndex === cardIndex) {
+          if (event.detail >= 2) autoMove();
+          else { selected = null; lastCardTap = null; render(); }
           return;
         }
         if (selected && !(selected.source === source && selected.index === index && selected.cardIndex === cardIndex) && (source === 'tableau' || source === 'foundation')) {
