@@ -98,7 +98,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.72</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.73</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -155,6 +155,7 @@
         const data = await response.json();
         if (Array.isArray(data)) {
           solvableDeals = data.filter(deck => Array.isArray(deck) && deck.length === 52 && new Set(deck).size === 52 && deck.every(id => Number.isInteger(id) && id >= 0 && id < 52));
+          dealCursor = Math.floor(Math.random() * solvableDeals.length);
         }
       } catch (error) {
         console.info('Keine JSON-Decksammlung geladen; verwende den eingebauten Fallback.', error);
@@ -183,7 +184,7 @@
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; persistGame(); }
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
     function cancelPendingReveal() { animationToken++; clearTimeout(revealTimer); clearTimeout(revealClearTimer); revealTimer = revealClearTimer = null; revealedCards = []; }
-    function undo() { let previous = history.pop(); if (!previous) return; cancelPendingReveal(); const current = copyState(); while (previous && sameStateWithoutFaceUp(previous, current) && history.length) previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
+    function undo() { let previous = history.pop(); if (!previous) return; cancelPendingReveal(); const current = copyState(); while (previous && sameStateWithoutFaceUp(previous, current) && history.length) previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; if (gamePanel.classList.contains('victory')) { gamePanel.classList.remove('victory'); clearInterval(timer); timer = setInterval(() => { seconds++; updateStatus(); }, 1000); } const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
     function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); element.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right suit-top">${card.suit}</span><span class="suit center-suit">${card.suit}</span>`; return element; }
@@ -309,7 +310,6 @@
     function autoFinishGame() { if (hasHiddenCards()) return; const origins = captureCardPositions(allCards()); saveState(); const remaining = [...tableau.flat(), ...stock, ...waste]; foundations = foundations.map((pile, suitIndex) => [...pile, ...remaining.filter(item => item.suit === suits[suitIndex]).sort((a, b) => a.rank - b.rank)]); tableau = Array.from({ length: 7 }, () => []); stock = []; waste = []; selected = null; moves++; clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.'; const finished = allCards(); render(); animateCardMoves(finished, origins); updateStatus(); }
     document.getElementById('newGame').addEventListener('click', () => start()); document.getElementById('sameGame').addEventListener('click', () => start(currentDeck)); autoFinishButton.addEventListener('click', autoFinishGame);
     document.getElementById('undo').addEventListener('click', undo);
-    window.addEventListener('resize', render);
     loadSolvableDeals().then(() => { if (!restoreGame()) start(); });
   </script>
 </body>
