@@ -50,18 +50,16 @@ Ein Tap auf den Ziehstapel ruft `drawStock()` sofort auf. `lastStockTapAt` fasst
 
 Ungültige Züge ändern den Spielstand nicht. Gültige Züge sichern vorher den Zustand für „Rückgängig“, aktualisieren die Zähler und zeichnen das Spielfeld neu.
 
-## Desktop-Drag & Drop
+## Drag & Drop (Maus, Touch, Stift)
 
-Karten-Buttons sind `draggable`. Beim `dragstart` wird die Karte bzw. Folge in `selected` übernommen. Tableau-Spalten und Grundstapel erlauben `dragover` und verarbeiten den Drop über `moveToTableau()` bzw. `moveToFoundation()`.
+Es gibt kein natives HTML5-Drag&Drop mehr (`draggable`, `dragstart`, `drop`). Maus, Touch und Stift verwenden dieselbe Pointer-Logik direkt an der Originalkarte, damit das Ziehen auf allen Geräten gleich aussieht:
 
-## Touch-Drag & Drop
-
-Auf Touch-Geräten wird ein Pointer-Drag direkt an der Originalkarte ausgeführt:
-
-1. `pointerdown` merkt Ausgangspunkt und bewegte offene Folge.
-2. Nach mindestens 8 px Bewegung werden alle Karten der Folge gemeinsam mit dem Finger verschoben und über andere Karten gelegt.
-3. `pointerup` ermittelt das Ziel unter dem Finger, übergibt die Ausgangspositionen für die Animation und führt den passenden Zug aus.
+1. `pointerdown` (bei der Maus nur die linke Taste) merkt Ausgangspunkt und bewegte offene Folge.
+2. Nach mindestens 8 px Bewegung werden alle Karten der Folge gemeinsam mit dem Zeiger verschoben (Klasse `dragging`, leicht transparent, über allen anderen Karten). Bei der Maus zeigt der Cursor dabei die greifende Hand (`body.dragging-cards`), und die Textauswahl ist auf dem Spielfeld abgeschaltet.
+3. `pointerup` ermittelt das Ziel unter dem Zeiger, übergibt die Ausgangspositionen für die Animation und führt den passenden Zug aus. Ohne gültiges Ziel fliegt die Karte zurück.
 4. `pointercancel` setzt temporäre Styles zurück.
+
+Ein Klick ohne Bewegung läuft bei der Maus weiter über `click` (auswählen, Doppelklick = Automatikzug). Nach einem Maus-Drag werden Clicks 250 ms lang verworfen, nach einem Touch-Drag länger (600 bis 1200 ms), weil Safari den Click verzögert nachschiebt.
 
 ## Verschiebe- und Umdreh-Animation
 

@@ -51,7 +51,7 @@
     .flip-side { position: absolute; inset: 0; backface-visibility: hidden; }
     .flip-back { border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
     .flip-front { transform: rotateY(180deg); }
-    .playing-card.touch-dragging { z-index: 1000; opacity: .9; pointer-events: none; }
+    .playing-card.dragging { z-index: 1000; opacity: .9; pointer-events: none; }
     .playing-card.animating-card { z-index: 9999 !important; }
     .card-flight { position: fixed !important; z-index: 100000 !important; margin: 0 !important; pointer-events: none !important; }
     .message { min-height: 2.8em; margin: 17px 0 10px; color: var(--muted); text-align: center; }
@@ -75,6 +75,8 @@
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     .flight-back { width: 100%; height: 100%; border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
     button, .pile { -webkit-tap-highlight-color: transparent; }
+    .game { -webkit-user-select: none; user-select: none; }
+    body.dragging-cards, body.dragging-cards * { cursor: grabbing !important; }
     .controls button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
     .stock:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
     .pile[tabindex]:focus-visible, .column[tabindex]:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
@@ -109,14 +111,14 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.80</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.81</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message'), autoFinishButton = document.getElementById('autoFinish');
     const gamePanel = document.querySelector('.game');
-    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, touchDrag = null, suppressClick = false, suppressClickUntil = 0, touchDragClickGuard = null, revealedCards = [], lastCardTap = null, lastStockTapAt = 0, revealTimer = null, revealClearTimer = null, animationToken = 0;
+    let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, cardDrag = null, suppressClick = false, suppressClickUntil = 0, dragClickGuard = null, revealedCards = [], lastCardTap = null, lastStockTapAt = 0, revealTimer = null, revealClearTimer = null, animationToken = 0;
     let solvableDeals = [], dealCursor = 0, currentDeck = [], heapMode = false;
     const STORAGE_KEY = 'boyreese.solitaire.save.v2';
     try { localStorage.removeItem('boyreese.solitaire.save.v1'); } catch (error) { /* storage unavailable */ }
@@ -124,7 +126,7 @@
     // träfe er sonst ein anderes Element unter dem Finger. Solche Clicks werden deshalb kurz global verworfen.
     let touchTapUntil = 0;
     const noteTouchTap = () => { touchTapUntil = performance.now() + 800; };
-    document.addEventListener('click', event => { if (performance.now() < touchTapUntil) { event.preventDefault(); event.stopImmediatePropagation(); return; } if (!touchDragClickGuard) return; const now = performance.now(); const targetIsCard = event.target.closest?.('.playing-card'); const nearRelease = Math.hypot((event.clientX || 0) - touchDragClickGuard.x, (event.clientY || 0) - touchDragClickGuard.y) < 48; if (now < touchDragClickGuard.until && (targetIsCard || nearRelease)) { event.preventDefault(); event.stopImmediatePropagation(); touchDragClickGuard = null; } else if (now >= touchDragClickGuard.until) touchDragClickGuard = null; }, true);
+    document.addEventListener('click', event => { if (performance.now() < touchTapUntil) { event.preventDefault(); event.stopImmediatePropagation(); return; } if (!dragClickGuard) return; const now = performance.now(); const targetIsCard = event.target.closest?.('.playing-card'); const nearRelease = Math.hypot((event.clientX || 0) - dragClickGuard.x, (event.clientY || 0) - dragClickGuard.y) < 48; if (now < dragClickGuard.until && (targetIsCard || nearRelease)) { event.preventDefault(); event.stopImmediatePropagation(); dragClickGuard = null; } else if (now >= dragClickGuard.until) dragClickGuard = null; }, true);
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
     function solvableDeck() {
       if (solvableDeals.length) {
@@ -195,7 +197,7 @@
       const isSelected = selected && selected.source === source && selected.index === index && (source === 'tableau' ? cardIndex >= selected.cardIndex : selected.cardIndex === cardIndex);
       const isRevealed = revealedCards.includes(card);
       button.className = 'playing-card' + (isSelected ? ' selected' : '') + (isRevealed ? ' revealed' : '');
-      button.type = 'button'; button.draggable = true; button.dataset.cardId = card.id;
+      button.type = 'button'; button.dataset.cardId = card.id;
       button.setAttribute('aria-label', `${card.name} ${card.suit}`);
       if (isRevealed) {
         const flip = document.createElement('div'); flip.className = 'flip-inner';
@@ -208,27 +210,29 @@
         tapCard(card, source, index, cardIndex);
       });
       button.addEventListener('pointerdown', event => {
-        if (event.pointerType !== 'touch') return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
         const cards = source === 'tableau' ? tableau[index].slice(cardIndex).filter(item => item.faceUp) : [card];
-        touchDrag = { source, index, cardIndex, startX: event.clientX, startY: event.clientY, moved: false, button, cards };
+        cardDrag = { source, index, cardIndex, startX: event.clientX, startY: event.clientY, moved: false, button, cards };
         button.setPointerCapture(event.pointerId);
       });
       button.addEventListener('pointermove', event => {
-        if (!touchDrag) return;
-        if (Math.hypot(event.clientX - touchDrag.startX, event.clientY - touchDrag.startY) > 8) {
-          touchDrag.moved = true;
-          touchDrag.cards.forEach((item, index) => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.add('touch-dragging'); element.style.zIndex = String(1000 + index); } });
+        if (!cardDrag) return;
+        if (Math.hypot(event.clientX - cardDrag.startX, event.clientY - cardDrag.startY) > 8) {
+          if (!cardDrag.moved) document.body.classList.add('dragging-cards');
+          cardDrag.moved = true;
+          cardDrag.cards.forEach((item, index) => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.add('dragging'); element.style.zIndex = String(1000 + index); } });
         }
-        if (touchDrag.moved) touchDrag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) element.style.transform = `translate(${event.clientX - touchDrag.startX}px, ${event.clientY - touchDrag.startY}px)`; });
+        if (cardDrag.moved) cardDrag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) element.style.transform = `translate(${event.clientX - cardDrag.startX}px, ${event.clientY - cardDrag.startY}px)`; });
       });
       button.addEventListener('pointerup', event => {
-        if (!touchDrag) return;
-        noteTouchTap();
-        const drag = touchDrag;
+        if (!cardDrag) return;
+        const touch = event.pointerType !== 'mouse'; if (touch) noteTouchTap();
+        document.body.classList.remove('dragging-cards');
+        const drag = cardDrag;
         const origins = new Map();
         if (drag.moved) drag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) origins.set(item.id, element.getBoundingClientRect()); });
-        drag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.remove('touch-dragging'); element.style.transform = ''; element.style.zIndex = ''; } });
-        if (!drag.moved && event.pointerType === 'touch') {
+        drag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.remove('dragging'); element.style.transform = ''; element.style.zIndex = ''; } });
+        if (!drag.moved && touch) {
           tapCard(card, source, index, cardIndex);
           suppressClick = true; suppressClickUntil = performance.now() + 600;
         } else if (drag.moved) {
@@ -238,21 +242,20 @@
           if (column) moveToTableau(Number(column.dataset.column), origins);
           else if (foundation) moveToFoundation(Number(foundation.dataset.foundation), origins);
           else { selected = null; render(); }
-          event.preventDefault(); suppressClick = true; suppressClickUntil = performance.now() + 600; touchDragClickGuard = { x: event.clientX, y: event.clientY, until: performance.now() + 1200 };
+          event.preventDefault(); suppressClick = true; suppressClickUntil = performance.now() + (touch ? 600 : 250); dragClickGuard = { x: event.clientX, y: event.clientY, until: performance.now() + (touch ? 1200 : 250) };
         }
-        touchDrag = null;
+        cardDrag = null;
       });
       button.addEventListener('pointercancel', () => {
-        if (touchDrag) touchDrag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.remove('touch-dragging'); element.style.transform = ''; element.style.zIndex = ''; } });
-        touchDrag = null;
+        document.body.classList.remove('dragging-cards');
+        if (cardDrag) cardDrag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.remove('dragging'); element.style.transform = ''; element.style.zIndex = ''; } });
+        cardDrag = null;
       });
-      button.addEventListener('dragstart', event => { selected = { source, index, cardIndex }; event.dataTransfer.effectAllowed = 'move'; });
-      button.addEventListener('dragend', () => { selected = null; render(); });
       return button;
     }
     function render() {
       if (heapMode) return renderHeapView();
-      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
+      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = '';
       foundations.forEach((pile, pileIndex) => {
@@ -267,8 +270,6 @@
         area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToFoundation(pileIndex); } });
         area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true);
         area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); });
-        area.addEventListener('dragover', event => event.preventDefault());
-        area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); });
         foundationsElement.appendChild(area);
       });
       const won = gamePanel.classList.contains('victory');
