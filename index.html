@@ -14,11 +14,8 @@
     body { min-height: 100vh; margin: 0; padding: 30px 16px; display: grid; place-items: center; color: var(--text); background: var(--bg); font: 16px/1.5 Arial, Helvetica, sans-serif; }
     .hero { width: min(100%, 650px); text-align: center; }
     .eyebrow { color: var(--cyan); font-size: .75rem; letter-spacing: .2em; font-weight: 800; text-transform: uppercase; }
-    h1 { margin: 10px 0; font-size: clamp(3rem, 13vw, 6rem); line-height: .9; letter-spacing: -.08em; }
     p { margin: 0 auto 28px; max-width: 450px; color: var(--muted); }
     .card { padding: 34px 26px; border: 3px solid #171717; border-radius: 18px; background: var(--panel); box-shadow: 7px 7px 0 #171717; }
-    .card.construction { position: relative; overflow: hidden; }
-    .card.construction::after { content: 'im Bau'; position: absolute; top: 34px; right: -54px; width: 205px; padding: 7px 0; border: 3px solid #171717; color: #FFFFFF; background: var(--purple); box-shadow: 3px 3px 0 #171717; font-size: .85rem; font-weight: 900; text-align: center; transform: rotate(35deg); pointer-events: none; }
     .games { display: grid; gap: 14px; }
     .card h2 { margin: 0 0 7px; font-size: 1.35rem; }
     .card p { margin-bottom: 22px; font-size: .95rem; }
@@ -33,7 +30,6 @@
 </head>
 <body>
   <main class="hero">
-    <h1>Willkommen.</h1>
     <div class="games">
       <div class="card">
         <h2>Tic Tac Toe</h2>
@@ -45,7 +41,7 @@
         <p>Finde alle Kartenpaare – mit frei wählbarer Spielfeldgröße.</p>
         <a href="memory.html">Memory spielen&nbsp; →</a>
       </div>
-      <div class="card construction">
+      <div class="card">
         <h2>Solitär</h2>
         <p>Die einfache Variante des klassischen Kartenspiels.</p>
         <a href="solitaire.html">Solitär spielen&nbsp; →</a>
