@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4B8ED8" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; --foundation-step: 24px; }
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
@@ -26,9 +26,8 @@
     .foundations { display: flex; gap: 8px; margin-left: auto; }
     .foundation { display: block; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); cursor: pointer; }
     .foundation:not(.empty) { border: 0; }
-    .foundation .playing-card { position: absolute; inset: 0; z-index: 2; margin: 0; }
-    .foundation-cover { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-    .foundation-cover.empty { display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-size: 1.6rem; font-weight: 900; }
+    .foundation .playing-card { position: absolute; top: var(--stack-offset, 0px); right: auto; bottom: auto; left: 0; z-index: 2; margin: 0; }
+    .foundation-card-layer { position: absolute; top: var(--stack-offset, 0px); left: 0; z-index: 1; width: var(--card-width); height: var(--card-height); pointer-events: none; }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
     .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
@@ -68,7 +67,7 @@
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
-      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); }
+      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); --foundation-step: 14px; }
       body { padding: 12px 5px 20px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
@@ -96,7 +95,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.53</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.54</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -104,8 +103,6 @@
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message'), autoFinishButton = document.getElementById('autoFinish');
     const gamePanel = document.querySelector('.game');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, touchDrag = null, suppressClick = false, revealedCards = [], lastCardTap = null, lastStockTapAt = 0;
-    const foundationCovers = new Map();
-    let foundationBases = [false, false, false, false];
     let solvableDeals = [], dealCursor = 0, currentDeck = [];
     const STORAGE_KEY = 'boyreese.solitaire.save.v1';
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
@@ -159,18 +156,18 @@
       }
     }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start(deckToUse = null) { clearInterval(timer); gamePanel.classList.remove('victory'); foundationCovers.clear(); foundationBases = [false, false, false, false]; let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
-    function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))), foundationBases: [...foundationBases] }; }
+    function start(deckToUse = null) { clearInterval(timer); gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
+    function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function saveState() { history.push(copyState()); document.getElementById('undo').disabled = false; }
     function persistGame() {
       if (!tableau || !stock || !waste || !foundations) return;
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tableau, stock, waste, foundations, foundationBases, history, moves, seconds, currentDeck, won: gamePanel.classList.contains('victory') })); } catch (error) { console.warn('Solitär-Spielstand konnte nicht gespeichert werden.', error); }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tableau, stock, waste, foundations, history, moves, seconds, currentDeck, won: gamePanel.classList.contains('victory') })); } catch (error) { console.warn('Solitär-Spielstand konnte nicht gespeichert werden.', error); }
     }
     function restoreGame() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         if (!saved || saved.version !== 1 || !Array.isArray(saved.tableau) || saved.tableau.length !== 7 || !Array.isArray(saved.stock) || !Array.isArray(saved.waste) || !Array.isArray(saved.foundations) || saved.foundations.length !== 4 || !Array.isArray(saved.currentDeck)) return false;
-        tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; foundationBases = Array.isArray(saved.foundationBases) ? saved.foundationBases : foundations.map(pile => pile.length > 0); foundationCovers.clear(); history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; selected = null;
+        tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; selected = null;
         if (saved.won) { clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Partie bereits abgeschlossen.'; }
         else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); }
         render(); updateStatus(); return true;
@@ -178,7 +175,7 @@
     }
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; persistGame(); }
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
-    function undo() { const previous = history.pop(); if (!previous) return; tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; foundationBases = previous.foundationBases || foundations.map(pile => pile.length > 0); selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; render(); updateStatus(); }
+    function undo() { const previous = history.pop(); if (!previous) return; tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; render(); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
     function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map((item, index) => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); element.style.zIndex = String(1000 + index); const animation = element.animate([{ transform: `translate(${origin.left - target.left}px, ${origin.top - target.top}px)` }, { transform: 'translate(0, 0)' }], { duration: 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { element.style.zIndex = ''; }); }); Promise.all(animations).then(resolve); })); }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right suit-top">${card.suit}</span><span class="suit center-suit">${card.suit}</span>`; return element; }
@@ -254,7 +251,32 @@
     function render() {
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
-      foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation' + (pile.length ? '' : ' empty'); area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`); const cover = foundationCovers.get(pileIndex); if (cover && pile.at(-1)?.id === cover.coveredBy) { const underCard = document.createElement('div'); underCard.className = 'foundation-cover' + (cover.card ? '' : ' empty'); if (cover.card) underCard.appendChild(face(cover.card)); else underCard.textContent = 'A'; area.appendChild(underCard); } else if (pile.length && foundationBases[pileIndex]) { const underCard = document.createElement('div'); underCard.className = 'foundation-cover empty'; underCard.textContent = 'A'; area.appendChild(underCard); } if (pile.length) area.appendChild(cardButton(pile[pile.length - 1], 'foundation', pileIndex)); area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true); area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); }); foundationsElement.appendChild(area); });
+      foundationsElement.innerHTML = '';
+      const foundationStep = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--foundation-step'));
+      const cardHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-height'));
+      foundations.forEach((pile, pileIndex) => {
+        const area = document.createElement('div');
+        area.className = 'pile foundation' + (pile.length ? '' : ' empty');
+        area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`);
+        area.style.height = `${cardHeight + Math.max(0, pile.length - 1) * foundationStep}px`;
+        pile.forEach((item, cardIndex) => {
+          const offset = `${cardIndex * foundationStep}px`;
+          if (cardIndex === pile.length - 1) {
+            const topCard = cardButton(item, 'foundation', pileIndex);
+            topCard.style.setProperty('--stack-offset', offset); topCard.style.zIndex = String(cardIndex + 2);
+            area.appendChild(topCard);
+          } else {
+            const layer = document.createElement('div');
+            layer.className = 'foundation-card-layer'; layer.style.setProperty('--stack-offset', offset); layer.style.zIndex = String(cardIndex + 1);
+            layer.setAttribute('aria-hidden', 'true'); layer.appendChild(face(item)); area.appendChild(layer);
+          }
+        });
+        area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true);
+        area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); });
+        area.addEventListener('dragover', event => event.preventDefault());
+        area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); });
+        foundationsElement.appendChild(area);
+      });
       autoFinishButton.hidden = hasHiddenCards() || foundations.every(pile => pile.length === 13);
       document.getElementById('undo').disabled = history.length === 0;
       persistGame();
@@ -266,7 +288,7 @@
     function canPlaceOnFoundation(card, pile) { const top = pile.at(-1); return top ? top.suit === card.suit && card.rank === top.rank + 1 : card.rank === 0; }
     function autoMove() { const moving = picked(); const card = moving[0]; if (!card) return false; if (moving.length === 1) { for (let pileIndex = 0; pileIndex < foundations.length; pileIndex++) if (canPlaceOnFoundation(card, foundations[pileIndex])) return moveToFoundation(pileIndex); } for (let destination = 0; destination < tableau.length; destination++) { if (selected.source === 'tableau' && selected.index === destination) continue; const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) return moveToTableau(destination); } return false; }
     function moveToTableau(destination, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || !validSequence(moving) || (selected.source === 'tableau' && selected.index === destination)) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { saveState(); removeSelected(false); tableau[destination].push(...moving); moves++; message.innerHTML = '<b>Guter Zug!</b> Wähle die nächste Karte.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard)); updateStatus(); return true; } return false; }
-    function moveToFoundation(pileIndex, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1 || !canPlaceOnFoundation(card, foundations[pileIndex])) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const oldTop = foundations[pileIndex].at(-1) || null; const origins = captureCardPositions(moving, originsOverride); saveState(); removeSelected(false); foundations[pileIndex].push(card); foundationBases[pileIndex] = true; foundationCovers.set(pileIndex, { card: oldTop, coveredBy: card.id }); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); animateCardMoves(moving, origins).then(() => { if (foundationCovers.get(pileIndex)?.coveredBy === card.id) { foundationCovers.delete(pileIndex); render(); } revealAfterMove(revealCard); }); updateStatus(); return true; }
+    function moveToFoundation(pileIndex, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1 || !canPlaceOnFoundation(card, foundations[pileIndex])) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); saveState(); removeSelected(false); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard)); updateStatus(); return true; }
     function drawStock() { saveState(); if (stock.length) { const card = stock.pop(); card.faceUp = true; waste.push(card); } else { stock = waste.reverse(); waste = []; } moves++; selected = null; render(); updateStatus(); }
     stockElement.addEventListener('click', () => { const now = performance.now(); if (now - lastStockTapAt < 500) return; lastStockTapAt = now; drawStock(); });
     function autoFinishGame() { if (hasHiddenCards()) return; saveState(); const remaining = [...tableau.flat(), ...stock, ...waste]; foundations = foundations.map((pile, suitIndex) => [...pile, ...remaining.filter(item => item.suit === suits[suitIndex]).sort((a, b) => a.rank - b.rank)]); tableau = Array.from({ length: 7 }, () => []); stock = []; waste = []; selected = null; moves++; clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.'; render(); updateStatus(); }
