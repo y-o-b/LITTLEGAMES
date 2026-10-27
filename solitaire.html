@@ -41,13 +41,17 @@
     .card-face .suit { position: absolute; left: 50%; line-height: 1; transform: translateX(-50%); }
     .card-face .center-suit { top: 60%; font-size: 4.3rem; transform: translate(-50%, -50%); }
     .playing-card.selected .card-face { outline: 4px solid var(--red); }
-    .playing-card.revealed .card-face { animation: revealFlip .6s ease both; backface-visibility: hidden; }
+    .playing-card.revealed { perspective: 700px; }
+    .flip-inner { position: absolute; inset: 0; transform-style: preserve-3d; animation: revealFlip .6s ease both; }
+    .flip-side { position: absolute; inset: 0; backface-visibility: hidden; }
+    .flip-back { border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
+    .flip-front { transform: rotateY(180deg); }
     .playing-card.touch-dragging { z-index: 1000; opacity: .9; pointer-events: none; }
     .message { min-height: 24px; margin: 17px 0 10px; color: var(--muted); text-align: center; }
     .message b { color: var(--ink); }
     @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.025) rotate(-.4deg); } 70% { transform: scale(1.01) rotate(.4deg); } }
     @keyframes foundationPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
-    @keyframes revealFlip { 0% { opacity: .2; transform: rotateY(90deg); } 100% { opacity: 1; transform: rotateY(0); } }
+    @keyframes revealFlip { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
     .game.victory { animation: victoryPulse .8s ease; }
     .game.victory .foundation:not(.empty) { animation: foundationPop .65s ease; }
     .status { display: flex; justify-content: center; gap: 24px; margin: 14px 0 0; font-size: .85rem; font-weight: 700; }
@@ -88,7 +92,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.45</div>
+    <div class="version" data-version>Version 0.46</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -178,7 +182,13 @@
       const isRevealed = revealedCards.includes(card);
       button.className = 'playing-card' + (isSelected ? ' selected' : '') + (isRevealed ? ' revealed' : '');
       button.type = 'button'; button.draggable = true; button.dataset.cardId = card.id;
-      button.setAttribute('aria-label', `${card.name} ${card.suit}`); button.appendChild(face(card));
+      button.setAttribute('aria-label', `${card.name} ${card.suit}`);
+      if (isRevealed) {
+        const flip = document.createElement('div'); flip.className = 'flip-inner';
+        const back = document.createElement('div'); back.className = 'flip-side flip-back';
+        const front = face(card); front.classList.add('flip-side', 'flip-front');
+        flip.append(back, front); button.appendChild(flip);
+      } else button.appendChild(face(card));
       button.addEventListener('click', event => {
         if (suppressClick) { suppressClick = false; return; }
         const now = performance.now();
