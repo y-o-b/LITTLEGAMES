@@ -68,7 +68,6 @@
     .controls button[hidden] { display: none; }
     .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--paper); background: transparent; font: inherit; font-size: .72rem; text-align: center; cursor: pointer; }
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
-    .safari-workaround { margin: 0 0 14px; padding: 10px 12px; border: 3px solid transparent; border-radius: 9px; color: transparent; background: transparent; font-weight: 700; text-align: center; visibility: hidden; pointer-events: none; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (max-width: 600px) {
       :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); --foundation-step: 0px; }
@@ -88,7 +87,6 @@
   <main class="app">
     <a class="home-link" href="index.html">← Zur Startseite</a>
     <header><h1>Solitär</h1><p>Baue die vier Farben von Ass bis König auf. Jede Partie ist lösbar.</p></header>
-    <div class="safari-workaround" aria-hidden="true">⚠️ Safari wird aktuell nicht vollständig unterstützt. Für Drag &amp; Drop und Kartenbewegungen bitte Chrome oder Firefox verwenden.</div>
     <section class="game" aria-label="Solitär-Spiel">
       <div class="top-row">
         <button class="pile stock" id="stock" type="button" aria-label="Kartenstapel"></button>
@@ -100,7 +98,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.71</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.72</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
