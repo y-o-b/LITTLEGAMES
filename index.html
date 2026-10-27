@@ -49,8 +49,8 @@
       </div>
     </div>
     <footer>Eine kleine Spielpause gefällig?</footer>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.62</button>
-    <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.63</button>
+    <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
 </body>
 </html>
