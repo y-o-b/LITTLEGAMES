@@ -14,7 +14,7 @@
     header { text-align: center; margin-bottom: 17px; }
     h1 { margin: 0 0 5px; color: var(--ink); font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; text-shadow: 3px 3px 0 var(--paper); }
     header p { margin: 0; color: var(--paper); }
-    .game { padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
+    .game { position: relative; padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
     .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
     .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
     .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
@@ -59,6 +59,8 @@
     @keyframes revealFlip { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
     .game.victory { animation: victoryPulse .8s ease; }
     .game.victory .foundation:not(.empty) { animation: foundationPop .65s ease; }
+    .heap { position: absolute; z-index: 5; pointer-events: none; }
+    .heap-card { position: absolute; width: var(--card-width); height: var(--card-height); will-change: transform; }
     .status { display: flex; justify-content: center; gap: 24px; margin: 14px 0 0; font-size: .85rem; font-weight: 700; }
     .status strong { color: var(--red); }
     .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -97,8 +99,9 @@
       <p class="message" id="message" aria-live="polite"><b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.</p>
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
+      <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.75</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.76</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -106,7 +109,7 @@
     const stockElement = document.getElementById('stock'), wasteElement = document.getElementById('waste'), tableauElement = document.getElementById('tableau'), foundationsElement = document.getElementById('foundations'), message = document.getElementById('message'), autoFinishButton = document.getElementById('autoFinish');
     const gamePanel = document.querySelector('.game');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, touchDrag = null, suppressClick = false, suppressClickUntil = 0, touchDragClickGuard = null, revealedCards = [], lastCardTap = null, lastStockTapAt = 0, revealTimer = null, revealClearTimer = null, animationToken = 0;
-    let solvableDeals = [], dealCursor = 0, currentDeck = [];
+    let solvableDeals = [], dealCursor = 0, currentDeck = [], heapMode = false;
     const STORAGE_KEY = 'boyreese.solitaire.save.v2';
     try { localStorage.removeItem('boyreese.solitaire.save.v1'); } catch (error) { /* storage unavailable */ }
     document.addEventListener('click', event => { if (!touchDragClickGuard) return; const now = performance.now(); const targetIsCard = event.target.closest?.('.playing-card'); const nearRelease = Math.hypot((event.clientX || 0) - touchDragClickGuard.x, (event.clientY || 0) - touchDragClickGuard.y) < 48; if (now < touchDragClickGuard.until && (targetIsCard || nearRelease)) { event.preventDefault(); event.stopImmediatePropagation(); touchDragClickGuard = null; } else if (now >= touchDragClickGuard.until) touchDragClickGuard = null; }, true);
@@ -162,7 +165,7 @@
       }
     }
     function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start(deckToUse = null) { clearInterval(timer); gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
+    function start(deckToUse = null) { clearInterval(timer); clearHeap(); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); render(); updateStatus(); }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function sameStateWithoutFaceUp(first, second) { return JSON.stringify(first, (key, value) => key === 'faceUp' ? undefined : value) === JSON.stringify(second, (key, value) => key === 'faceUp' ? undefined : value); }
     function allCards() { return [...tableau.flat(), ...stock, ...waste, ...foundations.flat()]; }
@@ -178,7 +181,7 @@
         tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; showTopCards(); selected = null;
         if (saved.won) { clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Partie bereits abgeschlossen.'; }
         else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; timer = setInterval(() => { seconds++; updateStatus(); }, 1000); }
-        render(); updateStatus(); return true;
+        render(); updateStatus(); if (saved.won) startHeap(false); return true;
       } catch (error) { console.warn('Solitär-Spielstand konnte nicht geladen werden.', error); return false; }
     }
     function updateStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; persistGame(); }
@@ -266,6 +269,7 @@
       return button;
     }
     function render() {
+      if (heapMode) return renderHeapView();
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = '';
@@ -294,8 +298,10 @@
         area.addEventListener('drop', event => { event.preventDefault(); moveToFoundation(pileIndex); });
         foundationsElement.appendChild(area);
       });
-      autoFinishButton.hidden = hasHiddenCards() || foundations.every(pile => pile.length === 13);
-      document.getElementById('undo').disabled = history.length === 0;
+      const won = gamePanel.classList.contains('victory');
+      autoFinishButton.hidden = hasHiddenCards() || won || foundations.every(pile => pile.length === 13);
+      document.getElementById('undo').disabled = won || history.length === 0;
+      document.getElementById('sameGame').disabled = won;
       persistGame();
     }
     function picked() { return selected?.source === 'waste' ? [waste[waste.length - 1]] : selected?.source === 'foundation' ? [foundations[selected.index].at(-1)] : selected ? tableau[selected.index].slice(selected.cardIndex) : []; }
@@ -305,7 +311,7 @@
     function canPlaceOnFoundation(card, pile) { const top = pile.at(-1); return top ? top.suit === card.suit && card.rank === top.rank + 1 : card.rank === 0; }
     function autoMove() { const moving = picked(); const card = moving[0]; if (!card) return false; if (moving.length === 1) { for (let pileIndex = 0; pileIndex < foundations.length; pileIndex++) if (canPlaceOnFoundation(card, foundations[pileIndex])) return moveToFoundation(pileIndex); } for (let destination = 0; destination < tableau.length; destination++) { if (selected.source === 'tableau' && selected.index === destination) continue; const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) return moveToTableau(destination); } return false; }
     function moveToTableau(destination, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || !validSequence(moving) || (selected.source === 'tableau' && selected.index === destination)) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const target = tableau[destination].at(-1); if ((!target && card.rank === 12) || (target && target.red !== card.red && target.rank === card.rank + 1)) { const token = animationToken; saveState(); removeSelected(false); tableau[destination].push(...moving); moves++; message.innerHTML = '<b>Guter Zug!</b> Wähle die nächste Karte.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard, token)); updateStatus(); return true; } return false; }
-    function moveToFoundation(pileIndex, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1 || !canPlaceOnFoundation(card, foundations[pileIndex])) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const token = animationToken; saveState(); removeSelected(false); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); animateCardMoves(moving, origins).then(() => revealAfterMove(revealCard, token)); updateStatus(); return true; }
+    function moveToFoundation(pileIndex, originsOverride = null) { const moving = picked(); const card = moving[0]; if (!card || moving.length !== 1 || !canPlaceOnFoundation(card, foundations[pileIndex])) return false; const sourceColumn = selected.source === 'tableau' ? selected.index : null; const revealCard = sourceColumn === null ? null : tableau[sourceColumn][selected.cardIndex - 1]; const origins = captureCardPositions(moving, originsOverride); const token = animationToken; saveState(); removeSelected(false); foundations[pileIndex].push(card); moves++; const won = foundations.every(pile => pile.length === 13); if (won) { clearInterval(timer); gamePanel.classList.add('victory'); } message.innerHTML = won ? '<b>Gewonnen!</b> Alle Karten liegen auf den Grundstapeln.' : '<b>Passt!</b> Baue weiter auf.'; render(); animateCardMoves(moving, origins).then(() => { revealAfterMove(revealCard, token); if (won) later(startHeap, 300); }); updateStatus(); return true; }
     function drawStock() { saveState(); if (stock.length) { const card = stock.pop(); card.faceUp = true; waste.push(card); } else { stock = waste.reverse(); waste = []; } moves++; selected = null; render(); updateStatus(); }
     // Nach einem Touch-Drag verschluckt Safari den nächsten Klick; Buttons reagieren daher direkt auf das Touch-pointerup.
     function onTap(button, action) {
@@ -319,9 +325,46 @@
       button.addEventListener('click', () => { if (performance.now() - touchHandledAt < 800) return; action(); });
     }
     onTap(stockElement, () => { const now = performance.now(); if (now - lastStockTapAt < 500) return; lastStockTapAt = now; drawStock(); });
+    const heapElement = document.getElementById('heap'), heapTimers = [];
+    const later = (action, delay) => heapTimers.push(setTimeout(action, delay));
+    function clearHeap() { heapTimers.splice(0).forEach(clearTimeout); heapElement.innerHTML = ''; heapMode = false; }
+    // Nach dem Sieg fliegen alle Karten von den Zielstapeln auf einen wilden Haufen; danach bleibt nur noch "Neues Spiel".
+    function startHeap(animate = true) {
+      if (heapMode || !gamePanel.classList.contains('victory')) return;
+      const piles = [...foundationsElement.children], cardWidth = piles[0].offsetWidth, cardHeight = piles[0].offsetHeight;
+      const left = tableauElement.offsetLeft, top = tableauElement.offsetTop, width = tableauElement.offsetWidth, height = tableauElement.offsetHeight;
+      heapElement.style.left = `${left}px`; heapElement.style.top = `${top}px`; heapElement.style.width = `${width}px`; heapElement.style.height = `${height}px`;
+      const bell = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5, margin = (cardHeight - cardWidth) / 2;
+      const rangeX = (width - cardWidth) / 2 - margin, rangeY = (height - cardHeight) / 2 - margin;
+      const items = [];
+      for (let rank = 12; rank >= 0; rank--) foundations.forEach((pile, pileIndex) => { if (pile[rank]) items.push({ item: pile[rank], pileIndex }); });
+      heapElement.innerHTML = '';
+      items.forEach(({ item, pileIndex }, index) => {
+        const node = document.createElement('div'), startX = piles[pileIndex].offsetLeft - left, startY = piles[pileIndex].offsetTop - top;
+        const endX = (width - cardWidth) / 2 + bell() * rangeX, endY = (height - cardHeight) / 2 + bell() * rangeY, angle = (Math.random() - .5) * 150;
+        const settle = () => { node.style.left = `${endX}px`; node.style.top = `${endY}px`; node.style.transform = `rotate(${angle}deg)`; node.style.zIndex = String(100 + index); };
+        node.className = 'heap-card'; node.appendChild(face(item));
+        node.style.left = `${startX}px`; node.style.top = `${startY}px`; node.style.zIndex = String(items.length - index);
+        heapElement.appendChild(node);
+        if (!animate) return settle();
+        later(() => {
+          node.style.zIndex = String(100 + index);
+          const animation = node.animate([{ transform: 'translate(0, 0) rotate(0deg)' }, { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${angle}deg)` }], { duration: 650, easing: 'cubic-bezier(.15, .75, .3, 1)', fill: 'forwards' });
+          animation.finished.catch(() => {}).then(() => { settle(); animation.cancel(); });
+        }, index * 55);
+      });
+      heapMode = true; render();
+    }
+    function renderHeapView() {
+      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column empty'; area.dataset.column = columnIndex; tableauElement.appendChild(area); });
+      stockElement.disabled = true; stockElement.classList.add('empty'); wasteElement.classList.remove('has-card'); wasteElement.innerHTML = '';
+      foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation empty'; area.dataset.foundation = pileIndex; area.style.height = 'var(--card-height)'; foundationsElement.appendChild(area); });
+      autoFinishButton.hidden = true; document.getElementById('undo').disabled = true; document.getElementById('sameGame').disabled = true;
+      persistGame();
+    }
     let autoFinishing = false;
     async function autoFinishGame() {
-      if (autoFinishing || hasHiddenCards()) return;
+      if (autoFinishing || gamePanel.classList.contains('victory') || hasHiddenCards()) return;
       autoFinishing = true; gamePanel.inert = true; autoFinishButton.hidden = true; clearInterval(timer); cancelPendingReveal(); saveState();
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
       const piles = foundations.map(pile => [...pile]), pileOf = new Map(), flights = [];
@@ -350,7 +393,7 @@
       flights.forEach(flight => flight.remove());
       gamePanel.inert = false; autoFinishing = false; gamePanel.classList.add('victory');
       message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.';
-      render(); updateStatus();
+      render(); updateStatus(); later(startHeap, 600);
     }
     onTap(document.getElementById('newGame'), () => start()); onTap(document.getElementById('sameGame'), () => start(currentDeck)); onTap(autoFinishButton, autoFinishGame);
     onTap(document.getElementById('undo'), undo);

@@ -65,6 +65,12 @@ Auf Touch-Geräten wird ein Pointer-Drag direkt an der Originalkarte ausgeführt
 
 Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der Verschiebung verdeckt. Erst nach Ende der Verschiebe-Animation setzt `revealAfterMove()` `faceUp` und startet die Umdreh-Animation.
 
+## Fertigspielen und Spielende
+
+- „Fertigspielen" erscheint, sobald keine verdeckte Karte mehr liegt. `autoFinishGame()` sperrt das Spielfeld (`inert`) und lässt die übrigen Karten einzeln auf ihren Zielstapel fliegen: aufsteigend nach Rang, reihum über die vier Stapel (110 ms Takt, 450 ms Flug). Jede Farbe landet auf dem Stapel, der mit ihrem Ass begonnen wurde.
+- Nach jedem Sieg, auch durch den letzten regulären Zug, fliegen alle Karten von den Zielstapeln auf einen wilden Haufen (`startHeap()`, Overlay `#heap`). Danach ist nur noch „Neues Spiel" aktiv: Rückgängig und Gleiches Deck sind gesperrt, das Spielfeld zeigt leere Stapel (`renderHeapView()`).
+- Wird ein gewonnenes Spiel aus dem Speicher geladen, erscheint der Haufen sofort ohne Animation. „Neues Spiel" räumt den Haufen weg (`clearHeap()`).
+
 ## Relevante Funktionen
 
 | Funktion | Aufgabe |
@@ -77,3 +83,5 @@ Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der 
 | `moveToFoundation()` | Validiert und führt Grundstapel-Züge aus |
 | `animateCardMoves()` | Animiert Karten vom Ursprung zum Ziel |
 | `revealAfterMove()` | Deckt nach der Bewegung eine freigelegte Karte auf |
+| `autoFinishGame()` | Fertigspielen: Karten fliegen nacheinander auf die Zielstapel |
+| `startHeap()` | Lässt nach dem Sieg alle Karten auf einen wilden Haufen fliegen |
