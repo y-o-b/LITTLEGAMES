@@ -74,7 +74,8 @@
     .new-game { display: block; width: 100%; background: var(--purple); color: #FFFFFF; border: 3px solid #171717; border-radius: 10px; padding: 13px; font-weight: 800; box-shadow: 4px 4px 0 #171717; transition: transform .15s, filter .15s; }
     .new-game:hover { transform: translateY(-2px); filter: brightness(1.1); }
     footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 21px; }
-    .version { margin-top: 8px; color: var(--muted); font-size: .72rem; text-align: center; }
+    .version { display: block; margin: 8px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
+    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
     @media (max-width: 390px) { .game { padding: 16px; } .cell { border-radius: 13px; } }
   </style>
 </head>
@@ -118,8 +119,8 @@
       </div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <div class="version" data-version>Version 0.49</div>
-    <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.50</button>
+    <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
     <footer>Du spielst immer X und beginnst.</footer>
   </main>
 

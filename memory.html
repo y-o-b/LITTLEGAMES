@@ -54,7 +54,8 @@
     .new-game:hover { filter: brightness(1.1); }
     .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
     .message b { color: var(--text); }
-    .version { margin-top: 14px; color: var(--muted); font-size: .72rem; text-align: center; }
+    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
+    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
     @media (max-width: 400px) { .game { padding: 15px; } .board { gap: 5px; } .memory-card { border-radius: 8px; } .size { padding: 6px 7px; } }
   </style>
 </head>
@@ -91,8 +92,8 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <div class="version" data-version>Version 0.49</div>
-    <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.50</button>
+    <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.reload()); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const icons = [
