@@ -30,7 +30,7 @@ Alle sichtbaren Karten werden von `cardButton()` erzeugt. Maus (Klick) und Touch
 
 Ein Touch-Tap ruft `tapCard()` direkt im `pointerup` auf und setzt `suppressClick`; der danach vom Browser erzeugte Click wird so nicht doppelt verarbeitet. Dasselbe gilt nach einem Touch-Drag.
 
-Die Buttons (Ziehstapel, Rückgängig, Gleiches Deck, Neues Spiel, Fertigspielen) verwenden `onTap()`: Touch löst direkt im `pointerup` aus (der Finger muss noch auf dem Button sein), der folgende Click wird 800 ms lang ignoriert. Grund: Safari verschluckt sonst den ersten Click nach einem Touch-Drag.
+Die Buttons (Ziehstapel, Rückgängig, Gleiches Deck, Neues Spiel, Fertigspielen) verwenden `onTap()`: Touch löst direkt im `pointerup` aus (der Finger muss noch auf dem Button sein). Grund: Safari verschluckt sonst den ersten Click nach einem Touch-Drag. Nach jedem verarbeiteten Touch-Tap (Karte oder Button) verwirft `noteTouchTap()` Clicks 800 ms lang global. Das verhindert, dass der von Safari nachgeschobene Click ein anderes Element trifft, wenn sich das Layout inzwischen verschoben hat (z. B. „Fertigspielen" verschwindet und „Neues Spiel" liegt unter dem Finger).
 
 Tastatur: Leere Spalten und leere Zielstapel sind per Tab erreichbar und reagieren auf Enter und Leertaste (ausgewählte Karte dorthin legen).
 
@@ -68,6 +68,11 @@ Auf Touch-Geräten wird ein Pointer-Drag direkt an der Originalkarte ausgeführt
 `animateCardMoves()` verwendet die gespeicherten Ausgangsrechtecke und die neuen Kartenpositionen (FLIP). Die Web-Animations-API bewegt die Karten 600 ms lang; währenddessen erhalten sie einen hohen `z-index`. Bei Kartenfolgen wird jede Karte einzeln animiert.
 
 Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der Verschiebung verdeckt. Erst nach Ende der Verschiebe-Animation setzt `revealAfterMove()` `faceUp` und startet die Umdreh-Animation.
+
+## Neues Spiel und Austeilen
+
+- Es gibt keinen eingebauten Ersatz für die Deck-Sammlung mehr. Die Spiele kommen ausschließlich aus `solitaire-deals.json`. Lässt sie sich nicht laden, zeigt „Neues Spiel" eine Meldung und ändert nichts. Der nächste Versuch lädt die Sammlung erneut.
+- „Neues Spiel" und „Gleiches Deck" (`startNewGame()`) lassen alle 52 Karten von ihrer aktuellen Position (auch aus dem Haufen oder den Zielstapeln) an ihren Platz im neuen Spiel fliegen. Die Reihenfolge entspricht dem Austeilen: Spalte für Spalte reihum, zuletzt der Ziehstapel. Karten, die ihre Seite wechseln, drehen sich unterwegs (Breite skaliert auf nahe 0 und wieder zurück). Während des Austeilens ist das Spielfeld gesperrt. Bei „Bewegung reduzieren" entfällt die Animation.
 
 ## Fertigspielen und Spielende
 
