@@ -28,7 +28,7 @@
     .foundation:not(.empty) { border: 0; }
     .foundation .playing-card { position: absolute; inset: 0; z-index: 2; margin: 0; }
     .foundation-cover { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-    .foundation-cover.empty { display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
+    .foundation-cover.empty { display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-size: 1.6rem; font-weight: 900; }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
     .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
@@ -95,7 +95,7 @@
       <div class="status"><span>Züge: <strong id="moves">0</strong></span><span>Zeit: <strong id="time">0:00</strong></span></div>
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
     </section>
-    <div class="version" data-version>Version 0.48</div>
+    <div class="version" data-version>Version 0.49</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
