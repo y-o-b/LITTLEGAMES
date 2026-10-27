@@ -70,6 +70,12 @@ Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der 
 - „Fertigspielen" erscheint, sobald keine verdeckte Karte mehr liegt. `autoFinishGame()` sperrt das Spielfeld (`inert`) und lässt die übrigen Karten einzeln auf ihren Zielstapel fliegen: aufsteigend nach Rang, reihum über die vier Stapel (110 ms Takt, 450 ms Flug). Jede Farbe landet auf dem Stapel, der mit ihrem Ass begonnen wurde.
 - Nach jedem Sieg, auch durch den letzten regulären Zug, fliegen alle Karten von den Zielstapeln auf einen wilden Haufen (`startHeap()`, Overlay `#heap`). Danach ist nur noch „Neues Spiel" aktiv: Rückgängig und Gleiches Deck sind gesperrt, das Spielfeld zeigt leere Stapel (`renderHeapView()`).
 - Wird ein gewonnenes Spiel aus dem Speicher geladen, erscheint der Haufen sofort ohne Animation. „Neues Spiel" räumt den Haufen weg (`clearHeap()`).
+- Die Zielpositionen des Haufens werden als Verhältniswerte gespeichert. Bei einer Größenänderung (z. B. Drehen) berechnet `layoutHeap()` Overlay und Karten neu.
+
+## Speichern
+
+- Der Spielstand liegt im `localStorage` (`STORAGE_KEY`). Geschrieben wird bei jeder Zustandsänderung (`updateStatus()`) sowie beim Verbergen oder Verlassen der Seite (`visibilitychange`, `pagehide`), nicht mehr jede Sekunde und nicht bei jedem Neuzeichnen.
+- Der Rückgängig-Verlauf ist auf `HISTORY_LIMIT` (200) Einträge begrenzt, damit der gespeicherte Stand nicht unbegrenzt wächst.
 
 ## Relevante Funktionen
 
