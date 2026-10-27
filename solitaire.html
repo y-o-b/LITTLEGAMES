@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4B8ED8" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; --foundation-step: 0px; }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; }
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
@@ -27,7 +27,6 @@
     .foundation { display: block; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); cursor: pointer; }
     .foundation:not(.empty) { border: 0; }
     .foundation .playing-card { position: absolute; top: var(--stack-offset, 0px); right: auto; bottom: auto; left: 0; z-index: 2; margin: 0; }
-    .foundation-card-layer { position: absolute; top: var(--stack-offset, 0px); left: 0; z-index: 1; width: var(--card-width); height: var(--card-height); pointer-events: none; }
     .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-size: 1.6rem; font-weight: 900; pointer-events: none; }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
@@ -71,8 +70,13 @@
     .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--paper); background: transparent; font: inherit; font-size: .72rem; text-align: center; cursor: pointer; }
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+    button, .pile { -webkit-tap-highlight-color: transparent; }
+    .controls button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+    .stock:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .pile[tabindex]:focus-visible, .column[tabindex]:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .game.victory, .game.victory .foundation:not(.empty), .flip-inner { animation-duration: .01ms; } }
     @media (max-width: 600px) {
-      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); --foundation-step: 0px; }
+      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); }
       body { padding: 12px 5px 20px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
@@ -101,7 +105,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.77</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.78</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -114,7 +118,6 @@
     try { localStorage.removeItem('boyreese.solitaire.save.v1'); } catch (error) { /* storage unavailable */ }
     document.addEventListener('click', event => { if (!touchDragClickGuard) return; const now = performance.now(); const targetIsCard = event.target.closest?.('.playing-card'); const nearRelease = Math.hypot((event.clientX || 0) - touchDragClickGuard.x, (event.clientY || 0) - touchDragClickGuard.y) < 48; if (now < touchDragClickGuard.until && (targetIsCard || nearRelease)) { event.preventDefault(); event.stopImmediatePropagation(); touchDragClickGuard = null; } else if (now >= touchDragClickGuard.until) touchDragClickGuard = null; }, true);
     function card(suitIndex, rank) { return { id: `${suitIndex}-${rank}`, suit: suits[suitIndex], rank, name: names[rank], red: suitIndex === 1 || suitIndex === 2 }; }
-    function deck() { return suits.flatMap((suit, suitIndex) => names.map((name, rank) => card(suitIndex, rank))); }
     function fallbackSolvableDeck() {
       // Die niedrigen Karten werden zuerst im Ziehstapel aufgedeckt. Die
       // sichtbaren Tableau-Karten sind dadurch abwechslungsreiche höhere
@@ -164,8 +167,7 @@
         console.info('Keine JSON-Decksammlung geladen; verwende den eingebauten Fallback.', error);
       }
     }
-    function shuffle(cards) { return [...cards].sort(() => Math.random() - .5); }
-    function start(deckToUse = null) { clearInterval(timer); clearHeap(); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; showStatus(); }, 1000); render(); updateStatus(); }
+    function start(deckToUse = null) { clearInterval(timer); clearHeap(); finishRun++; autoFinishing = false; lockBoard(false); document.querySelectorAll('.card-flight').forEach(flight => flight.remove()); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = (deckToUse || solvableDeck()).map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; showStatus(); }, 1000); render(); updateStatus(); }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function sameStateWithoutFaceUp(first, second) { return JSON.stringify(first, (key, value) => key === 'faceUp' ? undefined : value) === JSON.stringify(second, (key, value) => key === 'faceUp' ? undefined : value); }
     function allCards() { return [...tableau.flat(), ...stock, ...waste, ...foundations.flat()]; }
@@ -175,10 +177,17 @@
       if (!tableau || !stock || !waste || !foundations) return;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tableau, stock, waste, foundations, history, moves, seconds, currentDeck, won: gamePanel.classList.contains('victory') })); } catch (error) { console.warn('Solitär-Spielstand konnte nicht gespeichert werden.', error); }
     }
+    const validCardIds = new Set(suits.flatMap((suit, suitIndex) => names.map((name, rank) => `${suitIndex}-${rank}`)));
+    // Ein gespeicherter Stand muss genau die 52 Karten enthalten und jede Karte muss zu ihrer ID passen (schützt vor beschädigten oder manipulierten Daten).
+    function validState(state) {
+      const cards = [...state.tableau.flat(), ...state.stock, ...state.waste, ...state.foundations.flat()];
+      return cards.length === 52 && new Set(cards.map(item => item?.id)).size === 52 && cards.every(item => { if (!validCardIds.has(item.id)) return false; const [suitIndex, rank] = item.id.split('-').map(Number); return item.suit === suits[suitIndex] && item.name === names[rank] && item.rank === rank && item.red === (suitIndex === 1 || suitIndex === 2); });
+    }
     function restoreGame() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         if (!saved || saved.version !== 1 || !Array.isArray(saved.tableau) || saved.tableau.length !== 7 || !Array.isArray(saved.stock) || !Array.isArray(saved.waste) || !Array.isArray(saved.foundations) || saved.foundations.length !== 4 || !Array.isArray(saved.currentDeck)) return false;
+        if (!validState(saved) || saved.currentDeck.length !== 52 || !saved.currentDeck.every(id => validCardIds.has(id)) || (Array.isArray(saved.history) && !saved.history.every(validState))) return false;
         tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; showTopCards(); selected = null;
         if (saved.won) { clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Partie bereits abgeschlossen.'; }
         else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; timer = setInterval(() => { seconds++; showStatus(); }, 1000); }
@@ -190,10 +199,18 @@
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
     function showTopCards() { tableau.forEach(column => { if (column.length) column.at(-1).faceUp = true; }); }
     function cancelPendingReveal() { animationToken++; clearTimeout(revealTimer); clearTimeout(revealClearTimer); revealTimer = revealClearTimer = null; revealedCards = []; }
-    function undo() { let previous = history.pop(); if (!previous) return; cancelPendingReveal(); const current = copyState(); while (previous && sameStateWithoutFaceUp(previous, current) && history.length) previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; showTopCards(); selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; if (gamePanel.classList.contains('victory')) { gamePanel.classList.remove('victory'); clearInterval(timer); timer = setInterval(() => { seconds++; showStatus(); }, 1000); } const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
+    function undo() { if (gamePanel.classList.contains('victory')) return; let previous = history.pop(); if (!previous) return; cancelPendingReveal(); const current = copyState(); while (previous && sameStateWithoutFaceUp(previous, current) && history.length) previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; showTopCards(); selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
-    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); element.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
-    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; element.innerHTML = `<span class="corner top-left">${card.name}</span><span class="corner top-right suit-top">${card.suit}</span><span class="suit center-suit">${card.suit}</span>`; return element; }
+    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: reduceMotion() ? 1 : 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); element.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
+    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; [['corner top-left', card.name], ['corner top-right suit-top', card.suit], ['suit center-suit', card.suit]].forEach(([className, text]) => { const span = document.createElement('span'); span.className = className; span.textContent = text; element.appendChild(span); }); return element; }
+    // Einheitliche Tap-Logik für Maus und Touch: zweiter Tap innerhalb von 500 ms = Automatikzug, sonst auswählen, verschieben oder abwählen.
+    function tapCard(card, source, index, cardIndex) {
+      const now = performance.now(), isSelected = selected && selected.source === source && selected.index === index && selected.cardIndex === cardIndex;
+      if (lastCardTap?.id === card.id && now - lastCardTap.time < 500) { lastCardTap = null; selected = { source, index, cardIndex }; autoMove(); return; }
+      if (selected && !isSelected && (source === 'tableau' || source === 'foundation')) { lastCardTap = null; if (source === 'tableau') moveToTableau(index); else moveToFoundation(index); return; }
+      if (isSelected) { selected = null; lastCardTap = null; render(); return; }
+      selected = { source, index, cardIndex }; lastCardTap = { id: card.id, time: now }; render();
+    }
     function cardButton(card, source, index, cardIndex = 0) {
       const button = document.createElement('button');
       const isSelected = selected && selected.source === source && selected.index === index && (source === 'tableau' ? cardIndex >= selected.cardIndex : selected.cardIndex === cardIndex);
@@ -207,22 +224,9 @@
         const front = face(card); front.classList.add('flip-side', 'flip-front');
         flip.append(back, front); button.appendChild(flip);
       } else button.appendChild(face(card));
-      button.addEventListener('click', event => {
+      button.addEventListener('click', () => {
         if (suppressClick) { if (performance.now() < suppressClickUntil) return; suppressClick = false; }
-        const now = performance.now();
-        if (selected && selected.source === source && selected.index === index && selected.cardIndex === cardIndex) {
-          if (event.detail >= 2) autoMove();
-          else { selected = null; lastCardTap = null; render(); }
-          return;
-        }
-        if (selected && !(selected.source === source && selected.index === index && selected.cardIndex === cardIndex) && (source === 'tableau' || source === 'foundation')) {
-          lastCardTap = null;
-          if (source === 'tableau') moveToTableau(index); else moveToFoundation(index);
-          return;
-        }
-        selected = { source, index, cardIndex };
-        lastCardTap = { id: card.id, time: now };
-        render();
+        tapCard(card, source, index, cardIndex);
       });
       button.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') return;
@@ -245,11 +249,7 @@
         if (drag.moved) drag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) origins.set(item.id, element.getBoundingClientRect()); });
         drag.cards.forEach(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); if (element) { element.classList.remove('touch-dragging'); element.style.transform = ''; element.style.zIndex = ''; } });
         if (!drag.moved && event.pointerType === 'touch') {
-          const now = performance.now();
-          if (lastCardTap?.id === card.id && now - lastCardTap.time < 500) { lastCardTap = null; selected = { source, index, cardIndex }; autoMove(); }
-          else if (selected && !(selected.source === source && selected.index === index && selected.cardIndex === cardIndex) && (source === 'tableau' || source === 'foundation')) { lastCardTap = null; if (source === 'tableau') moveToTableau(index); else moveToFoundation(index); }
-          else if (selected && selected.source === source && selected.index === index && selected.cardIndex === cardIndex) { selected = null; lastCardTap = null; render(); }
-          else { selected = { source, index, cardIndex }; lastCardTap = { id: card.id, time: now }; render(); }
+          tapCard(card, source, index, cardIndex);
           suppressClick = true; suppressClickUntil = performance.now() + 600;
         } else if (drag.moved) {
           selected = { source: drag.source, index: drag.index, cardIndex: drag.cardIndex };
@@ -272,28 +272,19 @@
     }
     function render() {
       if (heapMode) return renderHeapView();
-      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
+      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); area.addEventListener('dragover', event => event.preventDefault()); area.addEventListener('drop', event => { event.preventDefault(); moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
       foundationsElement.innerHTML = '';
-      const foundationStep = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--foundation-step'));
       foundations.forEach((pile, pileIndex) => {
         const area = document.createElement('div');
         area.className = 'pile foundation' + (pile.length ? '' : ' empty');
         area.dataset.foundation = pileIndex; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Grundstapel ${pileIndex + 1}`);
         area.style.height = 'var(--card-height)';
-        if (pile.length) { const base = document.createElement('div'); base.className = 'foundation-base'; base.textContent = 'A'; base.setAttribute('aria-hidden', 'true'); area.appendChild(base); }
-        pile.forEach((item, cardIndex) => {
-          const offset = `${cardIndex * foundationStep}px`;
-          if (cardIndex === pile.length - 1) {
-            const topCard = cardButton(item, 'foundation', pileIndex);
-            topCard.style.setProperty('--stack-offset', offset); topCard.style.zIndex = String(cardIndex + 2);
-            area.appendChild(topCard);
-          } else {
-            const layer = document.createElement('div');
-            layer.className = 'foundation-card-layer'; layer.style.setProperty('--stack-offset', offset); layer.style.zIndex = String(cardIndex + 1);
-            layer.setAttribute('aria-hidden', 'true'); layer.appendChild(face(item)); area.appendChild(layer);
-          }
-        });
+        if (pile.length) {
+          const base = document.createElement('div'); base.className = 'foundation-base'; base.textContent = 'A'; base.setAttribute('aria-hidden', 'true'); area.appendChild(base);
+          area.appendChild(cardButton(pile.at(-1), 'foundation', pileIndex));
+        } else area.tabIndex = 0;
+        area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToFoundation(pileIndex); } });
         area.addEventListener('click', event => { if (!selected || (selected.source === 'foundation' && selected.index === pileIndex)) return; if (moveToFoundation(pileIndex)) { event.preventDefault(); event.stopPropagation(); } }, true);
         area.addEventListener('click', event => { if (event.target === area) moveToFoundation(pileIndex); });
         area.addEventListener('dragover', event => event.preventDefault());
@@ -325,7 +316,7 @@
       });
       button.addEventListener('click', () => { if (performance.now() - touchHandledAt < 800) return; action(); });
     }
-    onTap(stockElement, () => { const now = performance.now(); if (now - lastStockTapAt < 500) return; lastStockTapAt = now; drawStock(); });
+    onTap(stockElement, () => { const now = performance.now(); if (now - lastStockTapAt < 250) return; lastStockTapAt = now; drawStock(); });
     const heapElement = document.getElementById('heap'), heapTimers = [];
     const later = (action, delay) => heapTimers.push(setTimeout(action, delay));
     function clearHeap() { heapTimers.splice(0).forEach(clearTimeout); heapElement.innerHTML = ''; heapMode = false; }
@@ -345,6 +336,7 @@
     window.addEventListener('resize', () => { if (heapMode) layoutHeap(); });
     function startHeap(animate = true) {
       if (heapMode || !gamePanel.classList.contains('victory')) return;
+      animate = animate && !reduceMotion();
       const bell = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
       const items = [];
       for (let rank = 12; rank >= 0; rank--) foundations.forEach((pile, pileIndex) => { if (pile[rank]) items.push({ item: pile[rank], pileIndex }); });
@@ -373,36 +365,45 @@
       foundationsElement.innerHTML = ''; foundations.forEach((pile, pileIndex) => { const area = document.createElement('div'); area.className = 'pile foundation empty'; area.dataset.foundation = pileIndex; area.style.height = 'var(--card-height)'; foundationsElement.appendChild(area); });
       autoFinishButton.hidden = true; document.getElementById('undo').disabled = true; document.getElementById('sameGame').disabled = true;
     }
-    let autoFinishing = false;
+    let autoFinishing = false, finishRun = 0;
+    const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Während des Fertigspielens ist alles außer "Neues Spiel" gesperrt; "Neues Spiel" bricht den Ablauf ab.
+    const lockBoard = locked => [document.querySelector('.top-row'), tableauElement, document.getElementById('undo'), document.getElementById('sameGame')].forEach(element => { element.inert = locked; });
     async function autoFinishGame() {
       if (autoFinishing || gamePanel.classList.contains('victory') || hasHiddenCards()) return;
-      autoFinishing = true; gamePanel.inert = true; autoFinishButton.hidden = true; clearInterval(timer); cancelPendingReveal(); saveState();
+      const run = ++finishRun, aborted = () => run !== finishRun;
+      autoFinishing = true; lockBoard(true); autoFinishButton.hidden = true; clearInterval(timer); cancelPendingReveal(); saveState();
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
       const piles = foundations.map(pile => [...pile]), pileOf = new Map(), flights = [];
       suits.forEach(suit => { const index = piles.findIndex(pile => pile[0]?.suit === suit); if (index >= 0) pileOf.set(suit, index); });
       suits.forEach(suit => { if (!pileOf.has(suit)) pileOf.set(suit, piles.findIndex((pile, index) => !pile.length && ![...pileOf.values()].includes(index))); });
       const order = [...tableau.flat(), ...stock, ...waste].sort((a, b) => a.rank - b.rank || suits.indexOf(a.suit) - suits.indexOf(b.suit));
-      const pileRects = [...foundationsElement.children].map(element => element.getBoundingClientRect());
+      const startScrollX = window.scrollX, startScrollY = window.scrollY, pileRects = [...foundationsElement.children].map(element => element.getBoundingClientRect());
       try {
         const landed = [];
-        for (const [index, item] of order.entries()) {
+        if (!reduceMotion()) for (const [index, item] of order.entries()) {
+          if (aborted()) break;
           const source = document.querySelector(`[data-card-id="${item.id}"]`) || (waste.includes(item) ? wasteElement : stockElement);
           const from = source.getBoundingClientRect(), to = pileRects[pileOf.get(item.suit)];
+          // Seitenkoordinaten (absolute), damit Scrollen während des Ablaufs die Flugbahn nicht verschiebt
+          const fromX = from.left + window.scrollX, fromY = from.top + window.scrollY, toX = to.left + startScrollX, toY = to.top + startScrollY;
           const flight = document.createElement('div');
           flight.className = 'playing-card card-flight'; flight.appendChild(face(item));
-          flight.style.width = `${to.width}px`; flight.style.height = `${to.height}px`; flight.style.left = `${from.left}px`; flight.style.top = `${from.top}px`; flight.style.setProperty('z-index', String(100000 + index), 'important');
+          flight.style.setProperty('position', 'absolute', 'important'); flight.style.setProperty('z-index', String(100000 + index), 'important');
+          flight.style.width = `${to.width}px`; flight.style.height = `${to.height}px`; flight.style.left = `${fromX}px`; flight.style.top = `${fromY}px`;
           if (source !== stockElement && source !== wasteElement) source.style.visibility = 'hidden';
           document.body.appendChild(flight); flights.push(flight);
-          const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px)` }], { duration: 450, easing: 'ease-in-out', fill: 'forwards' });
-          landed.push(animation.finished.catch(() => {}).then(() => { flight.style.left = `${to.left}px`; flight.style.top = `${to.top}px`; animation.cancel(); }));
+          const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${toX - fromX}px, ${toY - fromY}px)` }], { duration: 450, easing: 'ease-in-out', fill: 'forwards' });
+          landed.push(animation.finished.catch(() => {}).then(() => { flight.style.left = `${toX}px`; flight.style.top = `${toY}px`; animation.cancel(); }));
           await wait(110);
         }
         await Promise.all(landed);
       } catch (error) { console.warn('Fertigspielen-Animation abgebrochen.', error); }
+      flights.forEach(flight => flight.remove());
+      if (aborted()) return;
       order.forEach(item => piles[pileOf.get(item.suit)].push(item));
       foundations = piles; tableau = Array.from({ length: 7 }, () => []); stock = []; waste = []; selected = null; moves++;
-      flights.forEach(flight => flight.remove());
-      gamePanel.inert = false; autoFinishing = false; gamePanel.classList.add('victory');
+      lockBoard(false); autoFinishing = false; gamePanel.classList.add('victory');
       message.innerHTML = '<b>Automatisch fertiggespielt!</b> Alle Karten liegen auf den Grundstapeln.';
       render(); updateStatus(); later(startHeap, 600);
     }
@@ -411,7 +412,8 @@
     // Gespeichert wird bei jeder Zustandsänderung (updateStatus) sowie beim Verlassen oder Verbergen der Seite, nicht mehr im Sekundentakt.
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistGame(); });
     window.addEventListener('pagehide', persistGame);
-    loadSolvableDeals().then(() => { if (!restoreGame()) start(); });
+    const dealsLoaded = loadSolvableDeals();
+    if (!restoreGame()) dealsLoaded.then(() => start());
   </script>
 </body>
 </html>

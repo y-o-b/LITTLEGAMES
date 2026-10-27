@@ -21,18 +21,22 @@ Eine Auswahl wird in `selected` als `{ source, index, cardIndex }` gespeichert:
 
 ## Klick und Touch-Tap
 
-Alle sichtbaren Karten werden von `cardButton()` erzeugt. Der Klick-Handler arbeitet ohne verzögerten Einzelklick:
+Alle sichtbaren Karten werden von `cardButton()` erzeugt. Maus (Klick) und Touch (`pointerup`) laufen über dieselbe Funktion `tapCard()`, ohne verzögerten Einzelklick:
 
 1. Ein erster Tap wählt die Karte bzw. Tableau-Folge aus und zeichnet die Auswahl neu.
 2. Ein weiterer Tap auf dieselbe Karten-ID innerhalb von 500 ms ruft `autoMove()` auf. Die Karte wird auf einen erlaubten Zielstapel bewegt; falls keiner passt, wird sie auf einen passenden Tableau-Stapel gesetzt.
 3. Ist bereits eine andere Karte ausgewählt, bewegt ein Tap auf eine Tableau-Karte die Auswahl in deren Spalte.
 4. Ein Tap auf einen Grundstapel verwendet dessen Capture-Phase-Handler. So wird auch ein belegter Grundstapel als Ziel erkannt, obwohl darin selbst ein Karten-Button liegt.
 
-Touch-Taps verwenden denselben Click-Handler wie Mausklicks. Ein erfolgreicher Touch-Drag setzt `suppressClick`, damit der vom Browser zusätzlich erzeugte Click nach dem Loslassen den Zug nicht ein zweites Mal ausführt.
+Ein Touch-Tap ruft `tapCard()` direkt im `pointerup` auf und setzt `suppressClick`; der danach vom Browser erzeugte Click wird so nicht doppelt verarbeitet. Dasselbe gilt nach einem Touch-Drag.
+
+Die Buttons (Ziehstapel, Rückgängig, Gleiches Deck, Neues Spiel, Fertigspielen) verwenden `onTap()`: Touch löst direkt im `pointerup` aus (der Finger muss noch auf dem Button sein), der folgende Click wird 800 ms lang ignoriert. Grund: Safari verschluckt sonst den ersten Click nach einem Touch-Drag.
+
+Tastatur: Leere Spalten und leere Zielstapel sind per Tab erreichbar und reagieren auf Enter und Leertaste (ausgewählte Karte dorthin legen).
 
 ## Ziehstapel
 
-Ein Tap auf den Ziehstapel ruft `drawStock()` sofort auf. `lastStockTapAt` fasst einen zweiten Tap innerhalb von 500 ms zusammen, sodass ein Doppeltap nicht zwei Karten zieht. Ist der Vorrat leer, wird die Ablage zurück in den Vorrat gedreht.
+Ein Tap auf den Ziehstapel ruft `drawStock()` sofort auf. `lastStockTapAt` fasst einen zweiten Tap innerhalb von 250 ms zusammen, sodass eine versehentlich doppelt ausgelöste Eingabe nicht zwei Karten zieht; zügiges Weiterblättern bleibt möglich. Ist der Vorrat leer, wird die Ablage zurück in den Vorrat gedreht.
 
 ## Regeln und Zielprüfung
 
@@ -67,7 +71,7 @@ Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der 
 
 ## Fertigspielen und Spielende
 
-- „Fertigspielen" erscheint, sobald keine verdeckte Karte mehr liegt. `autoFinishGame()` sperrt das Spielfeld (`inert`) und lässt die übrigen Karten einzeln auf ihren Zielstapel fliegen: aufsteigend nach Rang, reihum über die vier Stapel (110 ms Takt, 450 ms Flug). Jede Farbe landet auf dem Stapel, der mit ihrem Ass begonnen wurde.
+- „Fertigspielen" erscheint, sobald keine verdeckte Karte mehr liegt. `autoFinishGame()` sperrt das Spielfeld bis auf „Neues Spiel" (`lockBoard()`, `inert`); „Neues Spiel" bricht den Ablauf ab. Die Flugkarten verwenden Seitenkoordinaten und bleiben beim Scrollen auf Kurs. Bei „Bewegung reduzieren" (`prefers-reduced-motion`) entfällt die Animation. Die übrigen Karten fliegen einzeln auf ihren Zielstapel: aufsteigend nach Rang, reihum über die vier Stapel (110 ms Takt, 450 ms Flug). Jede Farbe landet auf dem Stapel, der mit ihrem Ass begonnen wurde.
 - Nach jedem Sieg, auch durch den letzten regulären Zug, fliegen alle Karten von den Zielstapeln auf einen wilden Haufen (`startHeap()`, Overlay `#heap`). Danach ist nur noch „Neues Spiel" aktiv: Rückgängig und Gleiches Deck sind gesperrt, das Spielfeld zeigt leere Stapel (`renderHeapView()`).
 - Wird ein gewonnenes Spiel aus dem Speicher geladen, erscheint der Haufen sofort ohne Animation. „Neues Spiel" räumt den Haufen weg (`clearHeap()`).
 - Die Zielpositionen des Haufens werden als Verhältniswerte gespeichert. Bei einer Größenänderung (z. B. Drehen) berechnet `layoutHeap()` Overlay und Karten neu.
@@ -76,12 +80,16 @@ Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der 
 
 - Der Spielstand liegt im `localStorage` (`STORAGE_KEY`). Geschrieben wird bei jeder Zustandsänderung (`updateStatus()`) sowie beim Verbergen oder Verlassen der Seite (`visibilitychange`, `pagehide`), nicht mehr jede Sekunde und nicht bei jedem Neuzeichnen.
 - Der Rückgängig-Verlauf ist auf `HISTORY_LIMIT` (200) Einträge begrenzt, damit der gespeicherte Stand nicht unbegrenzt wächst.
+- Beim Laden prüft `validState()`, dass der Stand (und jeder Verlaufseintrag) genau die 52 Karten enthält und jede Karte zu ihrer ID passt. Ein beschädigter oder manipulierter Stand wird verworfen und ein neues Spiel gestartet. Karten werden ohne `innerHTML` gezeichnet (`face()` nutzt `textContent`).
+- Ein gespeicherter Stand wird sofort angezeigt, ohne auf `solitaire-deals.json` zu warten. Nur ein neues Spiel braucht die Deck-Sammlung.
 
 ## Relevante Funktionen
 
 | Funktion | Aufgabe |
 | --- | --- |
-| `cardButton()` | Karten-UI, Auswahl, Doppeltap, native Drag- und Touch-Pointer-Events |
+| `cardButton()` | Karten-UI, native Drag- und Touch-Pointer-Events |
+| `tapCard()` | Gemeinsame Tap-Logik für Maus und Touch: auswählen, verschieben, abwählen, Doppeltap |
+| `onTap()` | Button-Aktion direkt im Touch-`pointerup`, der folgende Click wird ignoriert |
 | `picked()` | Ermittelt die bewegte Karte bzw. Folge |
 | `autoMove()` | Findet für Doppeltap ein erlaubtes Ziel |
 | `canPlaceOnFoundation()` | Prüft die Grundstapel-Regel |
