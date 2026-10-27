@@ -118,7 +118,7 @@
       </div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <div class="version" data-version>Version 0.46</div>
+    <div class="version" data-version>Version 0.47</div>
     <script>fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { document.querySelector('[data-version]').textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
     <footer>Du spielst immer X und beginnst.</footer>
   </main>
