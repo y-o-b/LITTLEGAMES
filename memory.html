@@ -18,14 +18,17 @@
   <style>
     :root { --bg: #4B8ED8; --panel: #FFFFFF; --card: #FFFFFF; --text: #171717; --muted: rgba(23,23,23,.7); --purple: #EF4B3F; --cyan: #171717; --pink: #EF4B3F; }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; padding: 25px 15px; display: grid; place-items: center; color: var(--text); background: var(--bg); font: 16px/1.5 Arial, Helvetica, sans-serif; }
+    body { min-height: 100vh; margin: 0; padding: 24px 15px; display: grid; justify-items: center; align-content: start; color: var(--text); background: var(--bg); font: 16px/1.5 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 620px); }
-    .home-link { display: inline-block; margin-bottom: 16px; color: var(--muted); font-size: .82rem; text-decoration: none; }
-    .home-link:hover { color: var(--text); }
-    header { text-align: center; margin-bottom: 20px; }
+    .back-button { display: grid; place-items: center; width: 44px; height: 44px; position: absolute; left: 0; top: 50%; margin-top: -22px; border: 3px solid #171717; border-radius: 50%; color: #171717; background: #FFFFFF; box-shadow: 3px 3px 0 #171717; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s; }
+    .back-button svg { display: block; width: 24px; height: 24px; margin-right: 2px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .back-button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #171717; }
+    .back-button:focus-visible { outline: 3px solid #EF4B3F; outline-offset: 3px; }
+    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
+    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
+    header { position: relative; display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 24px; }
     .eyebrow { color: var(--cyan); font-size: .75rem; letter-spacing: .2em; font-weight: 800; text-transform: uppercase; }
-    h1 { margin: 7px 0 8px; font-size: clamp(2.7rem, 11vw, 4.7rem); line-height: .95; letter-spacing: -.07em; }
-    header p { margin: 0; color: var(--muted); }
+    h1 { margin: 0; font-size: clamp(2.7rem, 11vw, 4.7rem); line-height: .95; letter-spacing: -.07em; }
     .game { padding: clamp(17px, 4vw, 28px); border: 3px solid #171717; border-radius: 18px; background: var(--panel); box-shadow: 7px 7px 0 #171717; }
     .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; margin-bottom: 19px; border-radius: 10px; background: #171717; }
     .mode { padding: 9px; border-radius: 9px; color: var(--muted); background: transparent; font-weight: 700; }
@@ -64,17 +67,14 @@
     .new-game:hover { filter: brightness(1.1); }
     .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
     .message b { color: var(--text); }
-    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
-    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
     @media (max-width: 400px) { .game { padding: 15px; } .board { gap: 5px; } .memory-card { border-radius: 8px; } .size { padding: 6px 7px; } }
   </style>
 </head>
 <body>
   <main class="app">
-    <a class="home-link" href="index.html">← Zur Startseite</a>
     <header>
+      <a class="back-button" href="index.html" aria-label="Zur Startseite" title="Zur Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></a>
       <h1>Memory</h1>
-      <p>Finde alle Paare und trainiere dein Gedächtnis.</p>
     </header>
     <section class="game" aria-label="Memory-Spiel">
       <div class="mode-switch" role="group" aria-label="Spielmodus">
@@ -102,7 +102,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.85</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.86</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>

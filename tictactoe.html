@@ -36,17 +36,21 @@
       background: var(--bg);
       font: 16px/1.5 Arial, Helvetica, sans-serif;
       display: grid;
-      place-items: center;
-      padding: 30px 16px;
+      justify-items: center;
+      align-content: start;
+      padding: 24px 16px 30px;
     }
 
     .app { width: min(100%, 560px); }
-    .home-link { display: inline-block; margin-bottom: 18px; color: var(--muted); font-size: .82rem; text-decoration: none; }
-    .home-link:hover { color: var(--text); }
-    header { text-align: center; margin-bottom: 25px; }
+    .back-button { display: grid; place-items: center; width: 44px; height: 44px; position: absolute; left: 0; top: 50%; margin-top: -22px; border: 3px solid #171717; border-radius: 50%; color: #171717; background: #FFFFFF; box-shadow: 3px 3px 0 #171717; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s; }
+    .back-button svg { display: block; width: 24px; height: 24px; margin-right: 2px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .back-button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #171717; }
+    .back-button:focus-visible { outline: 3px solid #EF4B3F; outline-offset: 3px; }
+    .version { display: block; margin: 8px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
+    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
+    header { position: relative; display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 24px; }
     .eyebrow { color: var(--cyan); font-size: .75rem; letter-spacing: .2em; font-weight: 800; text-transform: uppercase; }
-    h1 { font-size: clamp(2.4rem, 10vw, 4.5rem); line-height: .95; letter-spacing: -.07em; margin: 8px 0 12px; }
-    header p { margin: 0; color: var(--muted); }
+    h1 { font-size: clamp(2.4rem, 10vw, 4.5rem); line-height: .95; letter-spacing: -.07em; margin: 0; }
     .game {
       background: var(--panel);
       border: 3px solid var(--line);
@@ -83,18 +87,14 @@
     .cell.winner { background: #EF4B3F; color: #FFFFFF; border-color: #171717; animation: winnerPop .65s ease; }
     .new-game { display: block; width: 100%; background: var(--purple); color: #FFFFFF; border: 3px solid #171717; border-radius: 10px; padding: 13px; font-weight: 800; box-shadow: 4px 4px 0 #171717; transition: transform .15s, filter .15s; }
     .new-game:hover { transform: translateY(-2px); filter: brightness(1.1); }
-    footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 21px; }
-    .version { display: block; margin: 8px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
-    .version:focus-visible { outline: 2px solid #171717; outline-offset: 3px; }
     @media (max-width: 390px) { .game { padding: 16px; } .cell { border-radius: 13px; } }
   </style>
 </head>
 <body>
   <main class="app">
-    <a class="home-link" href="index.html">← Zur Startseite</a>
     <header>
+      <a class="back-button" href="index.html" aria-label="Zur Startseite" title="Zur Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></a>
       <h1>Tic Tac Toe</h1>
-      <p>Setze deine Zeichen. Drei in einer Reihe gewinnen.</p>
     </header>
 
     <section class="game" aria-label="Tic Tac Toe Spiel">
@@ -129,9 +129,8 @@
       </div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.85</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.86</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
-    <footer>Du spielst immer X und beginnst.</footer>
   </main>
 
   <script>

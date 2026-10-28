@@ -21,10 +21,14 @@
     html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
-    .home-link { display: inline-block; margin-bottom: 12px; color: var(--paper); font-size: .82rem; font-weight: 700; text-decoration: none; }
-    header { text-align: center; margin-bottom: 17px; }
-    h1 { margin: 0 0 5px; color: var(--ink); font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; }
-    header p { margin: 0; color: var(--paper); }
+    .back-button { display: grid; place-items: center; width: 44px; height: 44px; position: absolute; left: 0; top: 50%; margin-top: -22px; border: 3px solid #171717; border-radius: 50%; color: #171717; background: #FFFFFF; box-shadow: 3px 3px 0 #171717; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s; }
+    .back-button svg { display: block; width: 24px; height: 24px; margin-right: 2px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .back-button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #171717; }
+    .back-button:focus-visible { outline: 3px solid #EF4B3F; outline-offset: 3px; }
+    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--paper); background: transparent; font: inherit; font-size: .72rem; text-align: center; cursor: pointer; }
+    .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+    header { position: relative; display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 20px; }
+    h1 { margin: 0; color: var(--ink); font-size: clamp(2.5rem, 9vw, 4.5rem); line-height: .95; letter-spacing: -.06em; }
     .game { position: relative; padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
     .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
     .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(9 * var(--u)); background: var(--paper); }
@@ -80,8 +84,6 @@
     .controls .undo { color: var(--ink); background: var(--paper); }
     .controls button:disabled { cursor: not-allowed; opacity: .45; }
     .controls button[hidden] { display: none; }
-    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--paper); background: transparent; font: inherit; font-size: .72rem; text-align: center; cursor: pointer; }
-    .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     .flight-back { width: 100%; height: 100%; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     button, .pile { -webkit-tap-highlight-color: transparent; }
@@ -94,6 +96,7 @@
     @media (max-width: 600px) {
       :root { --card-width: calc((100vw - 22px) / 7); }
       body { padding: 12px 5px 20px; }
+      header { margin-bottom: 12px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
       .foundations { gap: 3px; }
@@ -103,8 +106,7 @@
 </head>
 <body>
   <main class="app">
-    <a class="home-link" href="index.html">← Zur Startseite</a>
-    <header><h1>Solitär</h1><p>Baue die vier Farben von Ass bis König auf. Jede Partie ist lösbar.</p></header>
+    <header><a class="back-button" href="index.html" aria-label="Zur Startseite" title="Zur Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></a><h1>Solitär</h1></header>
     <section class="game" aria-label="Solitär-Spiel">
       <div class="top-row">
         <button class="pile stock" id="stock" type="button" aria-label="Kartenstapel"></button>
@@ -117,7 +119,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.85</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.86</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>

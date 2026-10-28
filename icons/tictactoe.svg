@@ -2,7 +2,8 @@
   <title>Tic Tac Toe</title>
   <rect width="128" height="128" rx="24" fill="#4b8ed8"/>
   <rect x="14" y="14" width="100" height="100" rx="16" fill="#ffffff" stroke="#171717" stroke-width="8" stroke-linejoin="round"/>
-  <path d="M48 26V102M80 26V102M26 48H102M26 80H102" fill="none" stroke="#171717" stroke-width="8" stroke-linecap="round"/>
-  <path d="M32 32L42 42M42 32L32 42M86 86L96 96M96 86L86 96" fill="none" stroke="#171717" stroke-width="7.5" stroke-linecap="round"/>
-  <circle cx="64" cy="64" r="6.5" fill="none" stroke="#ef4b3f" stroke-width="7.5"/>
+  <!-- Gitter: drei gleich große Zellen (26 breit, Linien 7 stark), Zellenmitten bei 31, 64 und 97 -->
+  <path d="M47.500 18V110M80.500 18V110M18 47.500H110M18 80.500H110" fill="none" stroke="#171717" stroke-width="7"/>
+  <path d="M25 25L37 37M37 25L25 37M91 91L103 103M103 91L91 103" fill="none" stroke="#171717" stroke-width="7.500" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="7" fill="none" stroke="#ef4b3f" stroke-width="7.500"/>
 </svg>
