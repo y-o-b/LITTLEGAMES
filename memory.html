@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
+  <meta name="description" content="Memory für 1 oder 2 Spieler mit frei wählbarer Spielfeldgröße." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="application-name" content="Spiele" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Spiele" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="icon" href="icons/memory.svg" type="image/svg+xml" />
   <link rel="icon" href="icons/memory.ico" sizes="48x48" />
   <link rel="apple-touch-icon" href="icons/memory-180.png" />
@@ -95,7 +102,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.84</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.85</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -135,5 +142,6 @@
     sizeButtons.forEach(button => button.addEventListener('click', () => { size = Number(button.dataset.size); sizeButtons.forEach(item => item.classList.toggle('active', item === button)); start(); }));
     document.getElementById('newGame').addEventListener('click', start); start();
   </script>
+  <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 </body>
 </html>

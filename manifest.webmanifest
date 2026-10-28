@@ -1,0 +1,24 @@
+{
+  "id": "./",
+  "name": "boyreese.de",
+  "short_name": "Spiele",
+  "description": "Kleine Spiele für zwischendurch: Tic Tac Toe, Memory und Solitär.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4B8ED8",
+  "theme_color": "#4B8ED8",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icons/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/pwa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Tic Tac Toe", "url": "tictactoe.html", "icons": [{ "src": "icons/tictactoe-180.png", "sizes": "180x180", "type": "image/png" }] },
+    { "name": "Memory", "url": "memory.html", "icons": [{ "src": "icons/memory-180.png", "sizes": "180x180", "type": "image/png" }] },
+    { "name": "Solitär", "url": "solitaire.html", "icons": [{ "src": "icons/solitaire-180.png", "sizes": "180x180", "type": "image/png" }] }
+  ]
+}

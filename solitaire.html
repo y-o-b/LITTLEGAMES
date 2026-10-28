@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
+  <meta name="description" content="Klassisches Solitär (Klondike) mit lösbaren Partien." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="application-name" content="Spiele" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Spiele" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="icon" href="icons/solitaire.svg" type="image/svg+xml" />
   <link rel="icon" href="icons/solitaire.ico" sizes="48x48" />
   <link rel="apple-touch-icon" href="icons/solitaire-180.png" />
@@ -110,7 +117,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.84</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.85</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -453,5 +460,6 @@
     const dealsLoaded = loadSolvableDeals();
     if (!restoreGame()) dealsLoaded.then(() => start());
   </script>
+  <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 </body>
 </html>
