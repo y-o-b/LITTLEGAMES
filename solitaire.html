@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="favicon.ico" sizes="48x48" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" href="icons/solitaire.svg" type="image/svg+xml" />
+  <link rel="icon" href="icons/solitaire.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="icons/solitaire-180.png" />
   <title>Solitär · boyreese.de</title>
   <style>
     :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: calc(var(--card-width) * 1.4); --card-overlap: calc(var(--card-width) * 1.05); --u: calc(var(--card-width) / 53); }
@@ -110,7 +110,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.83</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.84</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>

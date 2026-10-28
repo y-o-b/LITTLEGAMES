@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Tic Tac Toe</title>
+  <rect width="128" height="128" rx="24" fill="#4b8ed8"/>
+  <rect x="14" y="14" width="100" height="100" rx="16" fill="#ffffff" stroke="#171717" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M48 26V102M80 26V102M26 48H102M26 80H102" fill="none" stroke="#171717" stroke-width="8" stroke-linecap="round"/>
+  <path d="M32 32L42 42M42 32L32 42M86 86L96 96M96 86L86 96" fill="none" stroke="#171717" stroke-width="7.5" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="6.5" fill="none" stroke="#ef4b3f" stroke-width="7.5"/>
+</svg>

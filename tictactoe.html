@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="favicon.ico" sizes="48x48" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" href="icons/tictactoe.svg" type="image/svg+xml" />
+  <link rel="icon" href="icons/tictactoe.ico" sizes="48x48" />
+  <link rel="apple-touch-icon" href="icons/tictactoe-180.png" />
   <title>Tic Tac Toe · boyreese.de</title>
   <style>
     :root {
@@ -122,7 +122,7 @@
       </div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.83</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.84</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
     <footer>Du spielst immer X und beginnst.</footer>
   </main>
