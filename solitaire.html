@@ -30,7 +30,9 @@
     .foundation { display: block; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); cursor: pointer; }
     .foundation:not(.empty) { border: 0; }
     .foundation .playing-card { position: absolute; top: var(--stack-offset, 0px); right: auto; bottom: auto; left: 0; z-index: 2; margin: 0; }
-    .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-size: 1.6rem; font-weight: 900; pointer-events: none; }
+    .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); font-size: 1.6rem; font-weight: 900; pointer-events: none; }
+    .under-card { position: absolute; top: 0; left: 0; z-index: 1; width: var(--card-width); height: var(--card-height); pointer-events: none; }
+    .under-card.slot { z-index: 0; border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
     .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
     .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
     .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
@@ -111,7 +113,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.81</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.82</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -148,7 +150,7 @@
         console.info('Keine JSON-Decksammlung geladen.', error);
       }
     }
-    function start(deckToUse = null) { const dealt = deckToUse || solvableDeck(); if (!dealt) { message.innerHTML = '<b>Kartendecks konnten nicht geladen werden.</b> „Neues Spiel" versucht es erneut.'; return false; } clearInterval(timer); clearHeap(); finishRun++; autoFinishing = false; lockBoard(false); document.querySelectorAll('.card-flight').forEach(flight => flight.remove()); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = dealt.map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; showStatus(); }, 1000); render(); updateStatus(); return true; }
+    function start(deckToUse = null) { const dealt = deckToUse || solvableDeck(); if (!dealt) { message.innerHTML = '<b>Kartendecks konnten nicht geladen werden.</b> „Neues Spiel" versucht es erneut.'; return false; } clearInterval(timer); clearHeap(); flyingIds.clear(); finishRun++; autoFinishing = false; lockBoard(false); document.querySelectorAll('.card-flight').forEach(flight => flight.remove()); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = dealt.map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; showStatus(); }, 1000); render(); updateStatus(); return true; }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function sameStateWithoutFaceUp(first, second) { return JSON.stringify(first, (key, value) => key === 'faceUp' ? undefined : value) === JSON.stringify(second, (key, value) => key === 'faceUp' ? undefined : value); }
     function allCards() { return [...tableau.flat(), ...stock, ...waste, ...foundations.flat()]; }
@@ -182,7 +184,8 @@
     function cancelPendingReveal() { animationToken++; clearTimeout(revealTimer); clearTimeout(revealClearTimer); revealTimer = revealClearTimer = null; revealedCards = []; }
     function undo() { if (gamePanel.classList.contains('victory')) return; let previous = history.pop(); if (!previous) return; cancelPendingReveal(); const current = copyState(); while (previous && sameStateWithoutFaceUp(previous, current) && history.length) previous = history.pop(); if (!previous) return; const origins = captureCardPositions(allCards()); tableau = previous.tableau; stock = previous.stock; waste = previous.waste; foundations = previous.foundations; showTopCards(); selected = null; moves++; document.getElementById('undo').disabled = !history.length; message.innerHTML = '<b>Rückgängig.</b> Das zählt als Zug.'; const restored = allCards(); render(); animateCardMoves(restored, origins); updateStatus(); }
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
-    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: reduceMotion() ? 1 : 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); element.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
+    const flyingIds = new Set();
+    function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; flyingIds.add(item.id); document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: reduceMotion() ? 1 : 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); flyingIds.delete(item.id); element.style.visibility = ''; const current = document.querySelector(`[data-card-id="${item.id}"]`); if (current) current.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
     function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; [['corner top-left', card.name], ['corner top-right suit-top', card.suit], ['suit center-suit', card.suit]].forEach(([className, text]) => { const span = document.createElement('span'); span.className = className; span.textContent = text; element.appendChild(span); }); return element; }
     // Einheitliche Tap-Logik für Maus und Touch: zweiter Tap innerhalb von 500 ms = Automatikzug, sonst auswählen, verschieben oder abwählen.
     function tapCard(card, source, index, cardIndex) {
@@ -197,7 +200,7 @@
       const isSelected = selected && selected.source === source && selected.index === index && (source === 'tableau' ? cardIndex >= selected.cardIndex : selected.cardIndex === cardIndex);
       const isRevealed = revealedCards.includes(card);
       button.className = 'playing-card' + (isSelected ? ' selected' : '') + (isRevealed ? ' revealed' : '');
-      button.type = 'button'; button.dataset.cardId = card.id;
+      button.type = 'button'; button.dataset.cardId = card.id; if (flyingIds.has(card.id)) button.style.visibility = 'hidden';
       button.setAttribute('aria-label', `${card.name} ${card.suit}`);
       if (isRevealed) {
         const flip = document.createElement('div'); flip.className = 'flip-inner';
@@ -253,10 +256,17 @@
       });
       return button;
     }
+    // Karte (oder leerer Platz) unter der obersten Karte von Ablage und Zielstapel: bleibt sichtbar, wenn die oberste gezogen wird oder noch fliegt.
+    function underCard(item) {
+      const layer = document.createElement('div');
+      layer.className = 'under-card' + (item ? '' : ' slot'); layer.setAttribute('aria-hidden', 'true');
+      if (item) layer.appendChild(face(item));
+      return layer;
+    }
     function render() {
       if (heapMode) return renderHeapView();
       tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
-      stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { const last = waste[waste.length - 1]; wasteElement.appendChild(cardButton(last, 'waste', 0)); }
+      stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { wasteElement.appendChild(underCard(waste.length > 1 ? waste[waste.length - 2] : null)); wasteElement.appendChild(cardButton(waste[waste.length - 1], 'waste', 0)); }
       foundationsElement.innerHTML = '';
       foundations.forEach((pile, pileIndex) => {
         const area = document.createElement('div');
@@ -265,6 +275,7 @@
         area.style.height = 'var(--card-height)';
         if (pile.length) {
           const base = document.createElement('div'); base.className = 'foundation-base'; base.textContent = 'A'; base.setAttribute('aria-hidden', 'true'); area.appendChild(base);
+          if (pile.length > 1) area.appendChild(underCard(pile.at(-2)));
           area.appendChild(cardButton(pile.at(-1), 'foundation', pileIndex));
         } else area.tabIndex = 0;
         area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToFoundation(pileIndex); } });

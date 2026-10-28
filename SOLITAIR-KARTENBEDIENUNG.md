@@ -67,6 +67,12 @@ Ein Klick ohne Bewegung läuft bei der Maus weiter über `click` (auswählen, Do
 
 Wird durch einen Tableau-Zug eine verdeckte Karte frei, bleibt sie während der Verschiebung verdeckt. Erst nach Ende der Verschiebe-Animation setzt `revealAfterMove()` `faceUp` und startet die Umdreh-Animation.
 
+### Karte unter der obersten Karte
+
+Ablage und Zielstapel zeichnen nicht nur die oberste Karte, sondern mit `underCard()` auch die darunterliegende (Klasse `under-card`) bzw. den leeren Platz (`under-card slot`, bei nur einer Karte). Beim Ziehen oder Wegfliegen der obersten Karte ist so schon die nächste sichtbar. Der Platzhalter unter der untersten Karte eines Zielstapels (`foundation-base`) hat keinen eigenen Schatten und sieht wie ein leerer Stapel aus.
+
+Karten, die gerade zum Ziel fliegen, stehen in `flyingIds`. `cardButton()` zeichnet sie bei jedem `render()` ausgeblendet, bis die Flug-Animation endet. So taucht die Zielkarte auch bei zwei schnell aufeinanderfolgenden Zügen nicht zu früh auf, und die bisherige oberste Karte des Ziels bleibt bis zur Landung sichtbar. Ein neues Spiel leert `flyingIds`.
+
 ## Neues Spiel und Austeilen
 
 - Es gibt keinen eingebauten Ersatz für die Deck-Sammlung mehr. Die Spiele kommen ausschließlich aus `solitaire-deals.json`. Lässt sie sich nicht laden, zeigt „Neues Spiel" eine Meldung und ändert nichts. Der nächste Versuch lädt die Sammlung erneut.
