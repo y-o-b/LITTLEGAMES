@@ -9,8 +9,9 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <title>Solitär · boyreese.de</title>
   <style>
-    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: 96px; --card-overlap: 72px; }
+    :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: calc(var(--card-width) * 1.4); --card-overlap: calc(var(--card-width) * 1.05); --u: calc(var(--card-width) / 53); }
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body { min-height: 100vh; margin: 0; padding: 20px 12px 30px; color: var(--ink); background: var(--blue); font: 15px/1.4 Arial, Helvetica, sans-serif; }
     .app { width: min(100%, 900px); margin: auto; }
     .home-link { display: inline-block; margin-bottom: 12px; color: var(--paper); font-size: .82rem; font-weight: 700; text-decoration: none; }
@@ -19,9 +20,9 @@
     header p { margin: 0; color: var(--paper); }
     .game { position: relative; padding: clamp(14px, 3vw, 25px); border: 3px solid var(--ink); border-radius: 18px; background: var(--paper); box-shadow: 7px 7px 0 var(--ink); }
     .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
-    .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
-    .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
-    .stock::after { content: '↻'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 2rem; font-weight: 900; }
+    .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(9 * var(--u)); background: var(--paper); }
+    .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink); }
+    .stock::after { content: '↻'; position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(32 * var(--u)); font-weight: 900; }
     .stock.empty { color: var(--ink); background: var(--paper); }
     .stock.empty { box-shadow: none; }
     .waste { flex: 0 0 var(--card-width); }
@@ -30,28 +31,28 @@
     .foundation { display: block; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); cursor: pointer; }
     .foundation:not(.empty) { border: 0; }
     .foundation .playing-card { position: absolute; top: var(--stack-offset, 0px); right: auto; bottom: auto; left: 0; z-index: 2; margin: 0; }
-    .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 9px; color: rgba(23,23,23,.22); background: var(--paper); font-size: 1.6rem; font-weight: 900; pointer-events: none; }
+    .foundation-base { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(9 * var(--u)); color: rgba(23,23,23,.22); background: var(--paper); font-size: calc(25.6 * var(--u)); font-weight: 900; pointer-events: none; }
     .under-card { position: absolute; top: 0; left: 0; z-index: 1; width: var(--card-width); height: var(--card-height); pointer-events: none; }
-    .under-card.slot { z-index: 0; border: 3px solid var(--ink); border-radius: 9px; background: var(--paper); }
-    .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: 1.6rem; font-weight: 900; }
-    .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: 255px; }
-    .column { width: var(--card-width); min-height: 150px; border-radius: 8px; background: rgba(75,142,216,.12); }
+    .under-card.slot { z-index: 0; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(9 * var(--u)); background: var(--paper); }
+    .foundation.empty::after { content: 'A'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(23,23,23,.22); font-size: calc(25.6 * var(--u)); font-weight: 900; }
+    .tableau { display: grid; grid-template-columns: repeat(7, var(--card-width)); justify-content: center; gap: 8px; min-height: calc(225 * var(--u)); }
+    .column { width: var(--card-width); min-height: calc(150 * var(--u)); border-radius: calc(8 * var(--u)); background: rgba(75,142,216,.12); }
     .column.empty { border: 0; }
     .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
-    .card-back { width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
-    .card-face { position: relative; display: block; height: 100%; padding: 5px; border: 3px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font-family: Arial, Helvetica, sans-serif; font-weight: 900; text-align: left; }
+    .card-back { width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .card-face { position: relative; display: block; height: 100%; padding: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); color: var(--ink); background: var(--paper); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-variant-emoji: text; text-align: left; }
     .card-face.red { color: var(--red); }
-    .card-face .corner { position: absolute; font-size: 1.7rem; line-height: 1; }
-    .card-face .top-left { top: 4px; left: 5px; }
-    .card-face .top-right { top: 3px; right: 4px; font-size: 2.15rem; }
+    .card-face .corner { position: absolute; font-size: calc(16.8 * var(--u)); line-height: 1; }
+    .card-face .top-left { top: calc(4 * var(--u)); left: calc(5 * var(--u)); }
+    .card-face .top-right { top: calc(3 * var(--u)); right: calc(4 * var(--u)); font-size: calc(23.2 * var(--u)); }
     .card-face .suit { position: absolute; left: 50%; line-height: 1; transform: translateX(-50%); }
-    .card-face .center-suit { top: 60%; font-size: 4.3rem; transform: translate(-50%, -50%); }
-    .playing-card.selected .card-face { outline: 4px solid var(--red); }
+    .card-face .center-suit { top: 60%; font-size: calc(46.4 * var(--u)); transform: translate(-50%, -50%); }
+    .playing-card.selected .card-face { outline: calc(4 * var(--u)) solid var(--red); }
     .playing-card.revealed { perspective: 700px; }
     .flip-inner { position: absolute; inset: 0; transform-style: preserve-3d; animation: revealFlip .6s ease both; }
     .flip-side { position: absolute; inset: 0; backface-visibility: hidden; }
-    .flip-back { border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
+    .flip-back { border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     .flip-front { transform: rotateY(180deg); }
     .playing-card.dragging { z-index: 1000; opacity: .9; pointer-events: none; }
     .playing-card.animating-card { z-index: 9999 !important; }
@@ -75,7 +76,7 @@
     .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--paper); background: transparent; font: inherit; font-size: .72rem; text-align: center; cursor: pointer; }
     .version:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
-    .flight-back { width: 100%; height: 100%; border: 3px solid var(--ink); border-radius: 8px; background: var(--blue); box-shadow: 2px 2px 0 var(--ink); }
+    .flight-back { width: 100%; height: 100%; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     button, .pile { -webkit-tap-highlight-color: transparent; }
     .game { -webkit-user-select: none; user-select: none; }
     body.dragging-cards, body.dragging-cards * { cursor: grabbing !important; }
@@ -84,16 +85,12 @@
     .pile[tabindex]:focus-visible, .column[tabindex]:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { .game.victory, .game.victory .foundation:not(.empty), .flip-inner { animation-duration: .01ms; } }
     @media (max-width: 600px) {
-      :root { --card-width: calc((100vw - 22px) / 7); --card-height: calc((100vw - 22px) / 5); --card-overlap: calc((100vw - 22px) / 6.6667); }
+      :root { --card-width: calc((100vw - 22px) / 7); }
       body { padding: 12px 5px 20px; }
       .game { width: 100%; padding: 12px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
       .top-row { gap: 5px; }
       .foundations { gap: 3px; }
-      .tableau { grid-template-columns: repeat(7, var(--card-width)); width: 100%; gap: 2px; min-height: 225px; }
-      .card-face { padding: 3px; border-width: 2px; font-size: .76rem; }
-      .card-face .corner { font-size: 1.05rem; }
-      .card-face .top-right { font-size: 1.45rem; }
-      .card-face .center-suit { font-size: 2.9rem; }
+      .tableau { grid-template-columns: repeat(7, var(--card-width)); width: 100%; gap: 2px; }
     }
   </style>
 </head>
@@ -113,7 +110,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.82</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.83</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -186,7 +183,7 @@
     function captureCardPositions(cards, override) { return new Map(cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); return [item.id, override?.get(item.id) || element?.getBoundingClientRect()]; })); }
     const flyingIds = new Set();
     function animateCardMoves(cards, origins) { return new Promise(resolve => requestAnimationFrame(() => { const animations = cards.map(item => { const element = document.querySelector(`[data-card-id="${item.id}"]`); const origin = origins.get(item.id); if (!element || !origin) return Promise.resolve(); const target = element.getBoundingClientRect(); const flight = element.cloneNode(true); flight.classList.add('card-flight'); flight.style.width = `${target.width}px`; flight.style.height = `${target.height}px`; flight.style.left = `${origin.left}px`; flight.style.top = `${origin.top}px`; element.style.visibility = 'hidden'; flyingIds.add(item.id); document.body.appendChild(flight); const animation = flight.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px)` }], { duration: reduceMotion() ? 1 : 600, easing: 'ease-in-out' }); return animation.finished.catch(() => {}).then(() => { flight.remove(); flyingIds.delete(item.id); element.style.visibility = ''; const current = document.querySelector(`[data-card-id="${item.id}"]`); if (current) current.style.visibility = ''; }); }); Promise.all(animations).then(resolve); })); }
-    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; [['corner top-left', card.name], ['corner top-right suit-top', card.suit], ['suit center-suit', card.suit]].forEach(([className, text]) => { const span = document.createElement('span'); span.className = className; span.textContent = text; element.appendChild(span); }); return element; }
+    function face(card, extra = '') { const element = document.createElement('div'); element.className = `card-face${card.red ? ' red' : ''} ${extra}`; [['corner top-left', card.name], ['corner top-right suit-top', card.suit + '\uFE0E'], ['suit center-suit', card.suit + '\uFE0E']].forEach(([className, text]) => { const span = document.createElement('span'); span.className = className; span.textContent = text; element.appendChild(span); }); return element; }
     // Einheitliche Tap-Logik für Maus und Touch: zweiter Tap innerhalb von 500 ms = Automatikzug, sonst auswählen, verschieben oder abwählen.
     function tapCard(card, source, index, cardIndex) {
       const now = performance.now(), isSelected = selected && selected.source === source && selected.index === index && selected.cardIndex === cardIndex;

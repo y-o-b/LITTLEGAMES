@@ -9,6 +9,16 @@ Dieses Dokument beschreibt den Karten-Eingabeweg in `solitaire.html`.
 - **Zielstapel** (`foundations`): die vier Stapel oben rechts. Auf ihnen werden die Karten nach Farbe vom Ass aufwärts abgelegt.
 - **Spielspalten** bzw. **Tableau** (`tableau`): die sieben Spalten im Hauptspielfeld. Hier werden Kartenfolgen absteigend mit wechselnden Farben gebaut.
 
+## Kartengröße und Proportionen
+
+Alle Maße der Karten leiten sich aus der Kartenbreite `--card-width` ab, damit Werte, Symbole und Linien auf jedem Gerät und in jedem Browser dieselben Proportionen haben:
+
+- `--card-width` ist auf dem Desktop 68 px und auf dem Handy (bis 600 px Breite) `(100vw − 22px) / 7`.
+- `--card-height` ist immer das 1,4-Fache, `--card-overlap` das 1,05-Fache der Breite.
+- `--u` ist die Kartenbreite geteilt durch 53. Die Referenz sind die Werte auf dem iPhone-Simulator (393 px breit, Karte 53 px). Schrift, Abstände, Rundungen, Schatten und Rahmen der Karten stehen als `calc(n * var(--u))`, nicht mehr in `rem` oder `px`. Damit ändern sie sich weder mit der Schrifteinstellung des Browsers noch weichen sie zwischen Desktop und Handy ab.
+- Die Karten-Symbole werden mit dem Textvariantenselektor U+FE0E gezeichnet (`face()`), damit ♥ und ♦ nirgends als farbiges Emoji erscheinen. `font-variant-emoji: text` ergänzt das, und `text-size-adjust: 100%` verhindert die automatische Textvergrößerung mobiler Browser.
+- Rahmenlinien rundet der Browser auf ganze Gerätepixel. Dort kann die Linienstärke daher um bis zu einen Pixel vom Sollwert abweichen.
+
 ## Datenmodell der Auswahl
 
 Eine Auswahl wird in `selected` als `{ source, index, cardIndex }` gespeichert:
