@@ -14,7 +14,7 @@
   <link rel="icon" href="icons/solitaire.svg" type="image/svg+xml" />
   <link rel="icon" href="icons/solitaire.ico" sizes="48x48" />
   <link rel="apple-touch-icon" href="icons/solitaire-180.png" />
-  <title>Solitär · boyreese.de</title>
+  <title>Solitär</title>
   <style>
     :root { --blue: #4B8ED8; --red: #EF4B3F; --ink: #171717; --paper: #FFF; --muted: rgba(23,23,23,.7); --card-width: 68px; --card-height: calc(var(--card-width) * 1.4); --card-overlap: calc(var(--card-width) * 1.05); --u: calc(var(--card-width) / 53); }
     * { box-sizing: border-box; }
@@ -128,8 +128,7 @@
     const gamePanel = document.querySelector('.game');
     let tableau, stock, waste, foundations, selected = null, history = [], moves = 0, seconds = 0, timer, cardDrag = null, suppressClick = false, suppressClickUntil = 0, dragClickGuard = null, revealedCards = [], lastCardTap = null, lastStockTapAt = 0, revealTimer = null, revealClearTimer = null, animationToken = 0;
     let solvableDeals = [], dealCursor = 0, currentDeck = [], heapMode = false;
-    const STORAGE_KEY = 'boyreese.solitaire.save.v2';
-    try { localStorage.removeItem('boyreese.solitaire.save.v1'); } catch (error) { /* storage unavailable */ }
+    const STORAGE_KEY = 'y-o-b.solitaire.save.v2';
     // Nach einem verarbeiteten Touch-Tap erzeugt Safari noch einen Click. Hat sich das Layout inzwischen verschoben (z. B. wird ein Button ausgeblendet),
     // träfe er sonst ein anderes Element unter dem Finger. Solche Clicks werden deshalb kurz global verworfen.
     let touchTapUntil = 0;

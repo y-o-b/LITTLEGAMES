@@ -1,7 +1,7 @@
 // Service Worker: macht die Seite offline nutzbar.
 // Strategie: Netzwerk zuerst (mit kurzem Timeout), bei Fehler oder Offline aus dem Cache.
 // So sieht man online immer den neuesten Stand, offline den zuletzt geladenen.
-const CACHE = 'boyreese-v1';
+const CACHE = 'y-o-b-v1';
 const NETWORK_TIMEOUT_MS = 4000;
 
 // Alles, was die Spiele zum Starten brauchen. Neue Dateien hier ergänzen und CACHE erhöhen.
@@ -43,7 +43,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key.startsWith('boyreese-') && key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith('y-o-b-') && key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
