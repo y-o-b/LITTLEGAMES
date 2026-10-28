@@ -119,7 +119,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.86</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.87</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -155,7 +155,7 @@
         console.info('Keine JSON-Decksammlung geladen.', error);
       }
     }
-    function start(deckToUse = null) { const dealt = deckToUse || solvableDeck(); if (!dealt) { message.innerHTML = '<b>Kartendecks konnten nicht geladen werden.</b> „Neues Spiel" versucht es erneut.'; return false; } clearInterval(timer); clearHeap(); flyingIds.clear(); finishRun++; autoFinishing = false; lockBoard(false); document.querySelectorAll('.card-flight').forEach(flight => flight.remove()); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = dealt.map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; timer = setInterval(() => { seconds++; showStatus(); }, 1000); render(); updateStatus(); return true; }
+    function start(deckToUse = null) { const dealt = deckToUse || solvableDeck(); if (!dealt) { message.innerHTML = '<b>Kartendecks konnten nicht geladen werden.</b> „Neues Spiel" versucht es erneut.'; return false; } clearInterval(timer); timer = null; clearHeap(); flyingIds.clear(); finishRun++; autoFinishing = false; lockBoard(false); document.querySelectorAll('.card-flight').forEach(flight => flight.remove()); message.innerHTML = `<b>Los geht's!</b> Lege Karten in absteigender Reihenfolge und wechselnden Farben.`; gamePanel.classList.remove('victory'); let cards = dealt.map(item => { const id = typeof item === 'string' ? item : item.id; const [suitIndex, rank] = id.split('-').map(Number); return card(suitIndex, rank); }); currentDeck = cards.map(item => item.id); tableau = Array.from({ length: 7 }, (_, column) => { const pile = cards.splice(0, column + 1); pile.forEach((card, index) => { card.faceUp = index === pile.length - 1; }); return pile; }); stock = cards; waste = []; foundations = suits.map(() => []); selected = null; history = []; moves = seconds = 0; render(); updateStatus(); return true; }
     function copyState() { return { tableau: tableau.map(column => column.map(card => ({ ...card }))), stock: stock.map(card => ({ ...card })), waste: waste.map(card => ({ ...card })), foundations: foundations.map(pile => pile.map(card => ({ ...card }))) }; }
     function sameStateWithoutFaceUp(first, second) { return JSON.stringify(first, (key, value) => key === 'faceUp' ? undefined : value) === JSON.stringify(second, (key, value) => key === 'faceUp' ? undefined : value); }
     function allCards() { return [...tableau.flat(), ...stock, ...waste, ...foundations.flat()]; }
@@ -178,12 +178,21 @@
         if (!validState(saved) || saved.currentDeck.length !== 52 || !saved.currentDeck.every(id => validCardIds.has(id)) || (Array.isArray(saved.history) && !saved.history.every(validState))) return false;
         tableau = saved.tableau; stock = saved.stock; waste = saved.waste; foundations = saved.foundations; history = Array.isArray(saved.history) ? saved.history : []; moves = Number(saved.moves) || 0; seconds = Number(saved.seconds) || 0; currentDeck = saved.currentDeck; showTopCards(); selected = null;
         if (saved.won) { clearInterval(timer); gamePanel.classList.add('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Partie bereits abgeschlossen.'; }
-        else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; timer = setInterval(() => { seconds++; showStatus(); }, 1000); }
+        else { gamePanel.classList.remove('victory'); message.innerHTML = '<b>Spielstand geladen.</b> Du kannst weiterspielen.'; }
         render(); updateStatus(); if (saved.won) startHeap(false); return true;
       } catch (error) { console.warn('Solitär-Spielstand konnte nicht geladen werden.', error); return false; }
     }
     function showStatus() { document.getElementById('moves').textContent = moves; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
     function updateStatus() { showStatus(); persistGame(); }
+    function startTimerOnInteraction(event) {
+      if (timer != null || !tableau || gamePanel.inert || gamePanel.classList.contains('victory') || autoFinishing) return;
+      const target = event.target.closest?.('.playing-card, #stock, .foundation, .column, #undo, #autoFinish');
+      if (!target || target.disabled || target.closest('[inert]')) return;
+      timer = setInterval(() => { seconds++; showStatus(); }, 1000);
+    }
+    gamePanel.addEventListener('pointerdown', event => { if (event.isPrimary !== false && (event.pointerType !== 'mouse' || event.button === 0)) startTimerOnInteraction(event); });
+    gamePanel.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') startTimerOnInteraction(event); });
+    gamePanel.addEventListener('click', startTimerOnInteraction);
     function hasHiddenCards() { return tableau.some(column => column.some(card => !card.faceUp)); }
     function showTopCards() { tableau.forEach(column => { if (column.length) column.at(-1).faceUp = true; }); }
     function cancelPendingReveal() { animationToken++; clearTimeout(revealTimer); clearTimeout(revealClearTimer); revealTimer = revealClearTimer = null; revealedCards = []; }

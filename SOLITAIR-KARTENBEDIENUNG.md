@@ -97,6 +97,7 @@ Karten, die gerade zum Ziel fliegen, stehen in `flyingIds`. `cardButton()` zeich
 
 ## Speichern
 
+- Die Zeit startet bei der ersten Bedienung des Spielfelds oder einer Spielaktion, nicht beim Austeilen. Auch ein geladener Spielstand wartet auf die erste Interaktion; seine gespeicherte Zeit bleibt erhalten. „Neues Spiel“ und „Gleiches Deck“ setzen die Zeit zurück und starten sie nicht selbst.
 - Der Spielstand liegt im `localStorage` (`STORAGE_KEY`). Geschrieben wird bei jeder Zustandsänderung (`updateStatus()`) sowie beim Verbergen oder Verlassen der Seite (`visibilitychange`, `pagehide`), nicht mehr jede Sekunde und nicht bei jedem Neuzeichnen.
 - Der Rückgängig-Verlauf ist auf `HISTORY_LIMIT` (200) Einträge begrenzt, damit der gespeicherte Stand nicht unbegrenzt wächst.
 - Beim Laden prüft `validState()`, dass der Stand (und jeder Verlaufseintrag) genau die 52 Karten enthält und jede Karte zu ihrer ID passt. Ein beschädigter oder manipulierter Stand wird verworfen und ein neues Spiel gestartet. Karten werden ohne `innerHTML` gezeichnet (`face()` nutzt `textContent`).
