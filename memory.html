@@ -102,7 +102,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.89</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.90</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -160,14 +160,18 @@
     // Neues Spiel: alle Karten werden verdeckt, wandern in die Mitte, werden gemischt und dann an ihren Platz ausgeteilt.
     async function start() {
       clearTimeout(heapTimer); const myRun = ++run, old = [...boardElement.children]; clearInterval(timer);
-      if (!old.length || reduceMotion()) { build(false); beginTimer(); return; }
+      if (reduceMotion()) { build(false); beginTimer(); return; }
+      let stack = old;
+      if (!old.length) { build(true); stack = [...boardElement.children]; }
+      else {
       locked = true; old.forEach(card => { settle(card); setPose(card, currentPose(card)); card.classList.remove('matched', 'flipped'); });
       await Promise.all(old.map((card, index) => { const center = centerOffset(card); card.style.zIndex = index; return fly(card, pose(center.x + jitter(3), center.y + jitter(3), jitter(8), 0), 450, index * 12); }));
+      }
       for (let round = 0; round < 2 && myRun === run; round++) {
-        await Promise.all(old.map((card, index) => { const base = card._pose, side = index % 2 ? 1 : -1; card.style.zIndex = Math.floor(Math.random() * 100); return fly(card, pose(base.dx + side * card.offsetWidth * .8, base.dy + jitter(6), side * 12, 0), 220).then(() => myRun === run ? fly(card, pose(base.dx + jitter(3), base.dy + jitter(3), jitter(8), 0), 220) : null); }));
+        await Promise.all(stack.map((card, index) => { const base = card._pose, side = index % 2 ? 1 : -1; card.style.zIndex = Math.floor(Math.random() * 100); return fly(card, pose(base.dx + side * card.offsetWidth * .8, base.dy + jitter(6), side * 12, 0), 220).then(() => myRun === run ? fly(card, pose(base.dx + jitter(3), base.dy + jitter(3), jitter(8), 0), 220) : null); }));
       }
       if (myRun !== run) return;
-      build(true);
+      if (old.length) build(true);
       const dealt = [...boardElement.children];
       await Promise.all(dealt.map((card, index) => fly(card, pose(), 450, index * 45).then(() => { card.style.zIndex = ''; })));
       if (myRun !== run) return;
