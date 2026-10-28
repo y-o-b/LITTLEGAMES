@@ -102,7 +102,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.88</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.89</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -128,12 +128,12 @@
     const transformOf = p => `translate(${p.dx}px, ${p.dy}px) rotate(${p.rot}deg) rotateY(${p.flip}deg)`;
     const currentPose = card => card._pose || pose(0, 0, 0, card.classList.contains('flipped') || card.classList.contains('matched') ? 180 : 0);
     const setPose = (card, p) => { card._pose = p; card.style.transition = 'none'; card.style.transform = transformOf(p); };
-    const settle = card => { if (card._anim) { card._anim.cancel(); card._anim = null; if (card._target) setPose(card, card._target); } };
+    const settle = card => { if (card._timer) { clearTimeout(card._timer); card._timer = null; setPose(card, card._target); card._resolve?.(); } };
+    // CSS-Transition statt Web-Animations-API: läuft auch in Safari zuverlässig mit 3D-gedrehten Karten.
     function fly(card, to, duration, delay = 0, easing = 'ease-in-out') {
-      const from = currentPose(card); setPose(card, from); card._target = to;
-      const animation = card.animate([{ transform: transformOf(from) }, { transform: transformOf(to) }], { duration, delay, easing, fill: 'both' });
-      card._anim = animation;
-      return animation.finished.then(() => { if (card._anim === animation) { setPose(card, to); card._anim = null; animation.cancel(); } }, () => {});
+      settle(card); setPose(card, currentPose(card)); card._target = to; void card.offsetWidth;
+      card.style.transition = `transform ${duration}ms ${easing} ${delay}ms`; card.style.transform = transformOf(to); card._pose = to;
+      return new Promise(resolve => { card._resolve = resolve; card._timer = setTimeout(() => { card._timer = null; card.style.transition = 'none'; resolve(); }, duration + delay + 40); });
     }
     const jitter = amount => (Math.random() - .5) * 2 * amount;
     const bell = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
