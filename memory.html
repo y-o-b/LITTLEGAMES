@@ -102,7 +102,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.87</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.88</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -123,11 +123,55 @@
     const gamePanel = document.querySelector('.game');
     let size = 8, mode = 'single', currentPlayer = 1, playerScores = [0, 0], cards = [], first = null, second = null, locked = false, moves = 0, pairs = 0, seconds = 0, timer;
     function shuffle(items) { return [...items].sort(() => Math.random() - .5); }
-    function start() {
-      clearInterval(timer); gamePanel.classList.remove('victory'); const chosen = shuffle(icons).slice(0, size); cards = shuffle(chosen.flatMap(icon => [icon, icon])); first = second = null; locked = false; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
+    const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pose = (dx = 0, dy = 0, rot = 0, flip = 0) => ({ dx, dy, rot, flip });
+    const transformOf = p => `translate(${p.dx}px, ${p.dy}px) rotate(${p.rot}deg) rotateY(${p.flip}deg)`;
+    const currentPose = card => card._pose || pose(0, 0, 0, card.classList.contains('flipped') || card.classList.contains('matched') ? 180 : 0);
+    const setPose = (card, p) => { card._pose = p; card.style.transition = 'none'; card.style.transform = transformOf(p); };
+    const settle = card => { if (card._anim) { card._anim.cancel(); card._anim = null; if (card._target) setPose(card, card._target); } };
+    function fly(card, to, duration, delay = 0, easing = 'ease-in-out') {
+      const from = currentPose(card); setPose(card, from); card._target = to;
+      const animation = card.animate([{ transform: transformOf(from) }, { transform: transformOf(to) }], { duration, delay, easing, fill: 'both' });
+      card._anim = animation;
+      return animation.finished.then(() => { if (card._anim === animation) { setPose(card, to); card._anim = null; animation.cancel(); } }, () => {});
+    }
+    const jitter = amount => (Math.random() - .5) * 2 * amount;
+    const bell = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+    const centerOffset = card => ({ x: boardElement.offsetLeft + boardElement.clientWidth / 2 - (card.offsetLeft + card.offsetWidth / 2), y: boardElement.offsetTop + boardElement.clientHeight / 2 - (card.offsetTop + card.offsetHeight / 2) });
+    let run = 0, heapTimer = null;
+    // Nach dem Sieg fliegen alle Karten auf einen wilden Haufen (offen, zufällig gedreht).
+    function startHeap() {
+      const items = shuffle([...boardElement.children]);
+      items.forEach((card, index) => {
+        card.style.zIndex = 10 + index;
+        const center = centerOffset(card), bw = boardElement.clientWidth, bh = boardElement.clientHeight;
+        const target = pose(center.x + bell() * (bw - card.offsetWidth) / 2, center.y + bell() * (bh - card.offsetHeight) / 2, jitter(75), 180);
+        if (reduceMotion()) setPose(card, target); else fly(card, target, 650, index * 55, 'cubic-bezier(.15, .75, .3, 1)');
+      });
+    }
+    function build(stacked) {
+      clearInterval(timer); gamePanel.classList.remove('victory'); const chosen = shuffle(icons).slice(0, size); cards = shuffle(chosen.flatMap(icon => [icon, icon])); first = second = null; locked = stacked; currentPlayer = 1; playerScores = [0, 0]; moves = pairs = seconds = 0;
       boardElement.dataset.size = size; boardElement.style.gridTemplateColumns = `repeat(${size === 18 ? 6 : 4}, 1fr)`; boardElement.innerHTML = '';
       cards.forEach((icon, index) => { const card = document.createElement('button'); card.className = 'memory-card'; card.type = 'button'; card.dataset.index = index; card.dataset.icon = icon.symbol; card.style.setProperty('--symbol-bg', icon.color); card.setAttribute('role', 'gridcell'); card.setAttribute('aria-label', `Karte ${index + 1}, verdeckt`); card.addEventListener('click', () => flip(card)); boardElement.appendChild(card); });
-      timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); updateStats(); document.getElementById('message').innerHTML = mode === 'two' ? '<b>Spieler 1 ist dran.</b> Finde ein Paar.' : '<b>Bereit?</b> Finde das erste Paar.';
+      if (stacked) [...boardElement.children].forEach((card, index) => { const center = centerOffset(card); card.style.zIndex = cards.length - index; setPose(card, pose(center.x + jitter(3), center.y + jitter(3), jitter(8), 0)); });
+      document.getElementById('time').textContent = '0:00'; updateStats(); document.getElementById('message').innerHTML = mode === 'two' ? '<b>Spieler 1 ist dran.</b> Finde ein Paar.' : '<b>Bereit?</b> Finde das erste Paar.';
+    }
+    function beginTimer() { clearInterval(timer); timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); }
+    // Neues Spiel: alle Karten werden verdeckt, wandern in die Mitte, werden gemischt und dann an ihren Platz ausgeteilt.
+    async function start() {
+      clearTimeout(heapTimer); const myRun = ++run, old = [...boardElement.children]; clearInterval(timer);
+      if (!old.length || reduceMotion()) { build(false); beginTimer(); return; }
+      locked = true; old.forEach(card => { settle(card); setPose(card, currentPose(card)); card.classList.remove('matched', 'flipped'); });
+      await Promise.all(old.map((card, index) => { const center = centerOffset(card); card.style.zIndex = index; return fly(card, pose(center.x + jitter(3), center.y + jitter(3), jitter(8), 0), 450, index * 12); }));
+      for (let round = 0; round < 2 && myRun === run; round++) {
+        await Promise.all(old.map((card, index) => { const base = card._pose, side = index % 2 ? 1 : -1; card.style.zIndex = Math.floor(Math.random() * 100); return fly(card, pose(base.dx + side * card.offsetWidth * .8, base.dy + jitter(6), side * 12, 0), 220).then(() => myRun === run ? fly(card, pose(base.dx + jitter(3), base.dy + jitter(3), jitter(8), 0), 220) : null); }));
+      }
+      if (myRun !== run) return;
+      build(true);
+      const dealt = [...boardElement.children];
+      await Promise.all(dealt.map((card, index) => fly(card, pose(), 450, index * 45).then(() => { card.style.zIndex = ''; })));
+      if (myRun !== run) return;
+      locked = false; beginTimer();
     }
     function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; document.querySelector('#player1 strong').textContent = playerScores[0]; document.querySelector('#player2 strong').textContent = playerScores[1]; document.getElementById('player1').classList.toggle('active', currentPlayer === 1); document.getElementById('player2').classList.toggle('active', currentPlayer === 2); }
     function flip(card) {
@@ -135,8 +179,8 @@
       card.classList.add('flipped'); card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}`);
       if (!first) { first = card; return; }
       second = card; moves++; updateStats(); locked = true;
-      if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; gamePanel.classList.add('victory'); document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
-      else setTimeout(() => { [first, second].forEach(item => { item.classList.remove('flipped'); item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 1400);
+      if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; gamePanel.classList.add('victory'); heapTimer = setTimeout(startHeap, 800); document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
+      else { const flipRun = run; setTimeout(() => { if (flipRun !== run) return; [first, second].forEach(item => { item.classList.remove('flipped'); item.setAttribute('aria-label', `Karte ${Number(item.dataset.index) + 1}, verdeckt`); }); first = second = null; if (mode === 'two') { currentPlayer = currentPlayer === 1 ? 2 : 1; document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} ist dran.</b> Finde ein Paar.`; } locked = false; updateStats(); }, 1400); }
     }
     document.querySelectorAll('.mode').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; document.querySelectorAll('.mode').forEach(item => item.classList.toggle('active', item === button)); document.getElementById('players').hidden = mode !== 'two'; start(); }));
     sizeButtons.forEach(button => button.addEventListener('click', () => { size = Number(button.dataset.size); sizeButtons.forEach(item => item.classList.toggle('active', item === button)); start(); }));
