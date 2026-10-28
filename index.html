@@ -17,6 +17,7 @@
     p { margin: 0 auto 28px; max-width: 450px; color: var(--muted); }
     .card { padding: 34px 26px; border: 3px solid #171717; border-radius: 18px; background: var(--panel); box-shadow: 7px 7px 0 #171717; }
     .games { display: grid; gap: 14px; }
+    .game-icon { display: block; width: 72px; height: 72px; margin: 0 auto 14px; }
     .card h2 { margin: 0 0 7px; font-size: 1.35rem; }
     .card p { margin-bottom: 22px; font-size: .95rem; }
     .card + .card { margin-top: 14px; }
@@ -32,16 +33,19 @@
   <main class="hero">
     <div class="games">
       <div class="card">
+        <img class="game-icon" src="icons/tictactoe.svg" width="72" height="72" alt="" />
         <h2>Tic Tac Toe</h2>
         <p>Spiele gegen den Computer oder fordere eine zweite Person heraus.</p>
         <a href="tictactoe.html">Spiel starten&nbsp; →</a>
       </div>
       <div class="card">
+        <img class="game-icon" src="icons/memory.svg" width="72" height="72" alt="" />
         <h2>Memory</h2>
-        <p>Finde alle Kartenpaare – mit frei wählbarer Spielfeldgröße.</p>
+        <p>Finde alle Kartenpaare – für&nbsp;1&nbsp;oder&nbsp;2&nbsp;Spieler.</p>
         <a href="memory.html">Memory spielen&nbsp; →</a>
       </div>
       <div class="card">
+        <img class="game-icon" src="icons/solitaire.svg" width="72" height="72" alt="" />
         <h2>Solitär</h2>
         <p>Die einfache Variante des klassischen Kartenspiels.</p>
         <a href="solitaire.html">Solitär spielen&nbsp; →</a>
