@@ -44,6 +44,7 @@
     .cell { aspect-ratio: 1; min-width: 0; min-height: 0; overflow: hidden; padding: 0; border-radius: 3px; color: #171717; background: #4B8ED8; font-weight: 900; font-size: clamp(1rem, 5vw, 1.5rem); line-height: 1; -webkit-tap-highlight-color: transparent; }
     .cell.open { background: #FFFFFF; cursor: default; }
     .cell.flag { background: #4B8ED8; font-size: clamp(1.2rem, 6vw, 1.7rem); }
+    .cell.guess { background: #EF4B3F; }
     .cell.mine { background: #EF4B3F; }
     .cell.wrong { background: #FFD166; }
     .cell.n1 { color: #1f6fd0; } .cell.n2 { color: #2a9d4a; } .cell.n3 { color: #EF4B3F; } .cell.n4 { color: #6a3fc0; } .cell.n5 { color: #b5651d; } .cell.n6 { color: #14a0a0; } .cell.n7 { color: #171717; } .cell.n8 { color: #777; }
@@ -76,7 +77,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.10</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.11</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -87,7 +88,7 @@
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
       clearInterval(timer); timer = null; clearTimeout(pressTimer); const { cols, rows } = config();
-      grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, flag: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
+      grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, flag: false, guess: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
       boardElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; boardElement.innerHTML = '';
       grid.forEach((cell, index) => {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'cell'; button.dataset.index = index; button.setAttribute('role', 'gridcell'); button.setAttribute('aria-label', 'Verdecktes Feld');
@@ -108,12 +109,27 @@
     }
     function draw(index) {
       const cell = grid[index], button = boardElement.children[index];
-      button.className = 'cell' + (cell.open ? ' open' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
+      button.className = 'cell' + (cell.open ? ' open' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (cell.guess && !cell.flag && !cell.open && !over ? ' guess' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
       button.textContent = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.open && cell.count > 0 ? cell.count : '';
       button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : cell.flag ? 'Flagge' : 'Verdecktes Feld');
     }
     function updateStats() { document.getElementById('mines').textContent = config().mines - flagCount; document.getElementById('moves').textContent = openCount; }
-    function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; draw(index); updateStats(); }
+    function updateGuessMarks() {
+      grid.forEach(cell => { cell.guess = false; });
+      if (!placed || over) { grid.forEach((_, index) => draw(index)); return; }
+      const certainMines = new Set(), guesses = new Set();
+      grid.forEach((cell, index) => {
+        if (!cell.open || !cell.count) return;
+        const nearby = neighbors(index), unknown = nearby.filter(item => !grid[item].open && !grid[item].flag);
+        const remaining = cell.count - nearby.filter(item => grid[item].flag).length;
+        if (remaining <= 0 || !unknown.length) return;
+        if (remaining === unknown.length) unknown.forEach(item => certainMines.add(item));
+        else unknown.forEach(item => guesses.add(item));
+      });
+      if (!certainMines.size) guesses.forEach(index => { grid[index].guess = true; });
+      grid.forEach((_, index) => draw(index));
+    }
+    function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
     function reveal(index) {
       if (over || grid[index].flag || grid[index].open) return;
       if (!placed) placeMines(index);
@@ -125,7 +141,7 @@
         cell.open = true; openCount++; draw(current);
         if (cell.count === 0) queue.push(...neighbors(current));
       }
-      updateStats();
+      updateGuessMarks(); updateStats();
       if (openCount === grid.length - config().mines) win();
     }
     function finish() { over = true; clearInterval(timer); grid.forEach((_, index) => draw(index)); }
