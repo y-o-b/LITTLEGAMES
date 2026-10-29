@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#4B8ED8" />
+  <meta name="description" content="Minesweeper: Finde alle Minen, ohne eine auszulösen." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="application-name" content="Spiele" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Spiele" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="icon" href="icons/minesweeper.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/minesweeper-180.png" />
+  <title>Minesweeper</title>
+  <style>
+    :root { --bg: #4B8ED8; --panel: #FFFFFF; --text: #171717; --muted: rgba(23,23,23,.7); --red: #EF4B3F; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; padding: 24px 15px; display: grid; justify-items: center; align-content: start; color: var(--text); background: var(--bg); font: 16px/1.5 Arial, Helvetica, sans-serif; }
+    .app { width: min(100%, 620px); }
+    .back-button { display: grid; place-items: center; width: 44px; height: 44px; position: absolute; left: 0; top: 50%; margin-top: -22px; border: 3px solid #171717; border-radius: 50%; color: #171717; background: #FFFFFF; box-shadow: 3px 3px 0 #171717; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s; }
+    .back-button svg { display: block; width: 24px; height: 24px; margin-right: 2px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .back-button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #171717; }
+    .back-button:focus-visible { outline: 3px solid #EF4B3F; outline-offset: 3px; }
+    .version { display: block; margin: 14px auto 0; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; cursor: pointer; }
+    header { position: relative; display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 24px; }
+    h1 { margin: 0; font-size: clamp(2.2rem, 9vw, 4rem); line-height: .95; letter-spacing: -.07em; }
+    .game { padding: clamp(14px, 4vw, 26px); border: 3px solid #171717; border-radius: 18px; background: var(--panel); box-shadow: 7px 7px 0 #171717; }
+    button { border: 0; color: inherit; font: inherit; cursor: pointer; }
+    .sizes { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; color: var(--muted); font-size: .82rem; }
+    .size-buttons { display: flex; gap: 5px; }
+    .size { padding: 7px 10px; border: 2px solid #171717; border-radius: 8px; color: var(--muted); background: #FFFFFF; font-size: .78rem; }
+    .size.active { color: #FFFFFF; background: var(--red); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; text-align: center; }
+    .stat { padding: 8px 3px; border: 2px solid #171717; border-radius: 10px; }
+    .stat strong { display: block; font-size: 1.3rem; line-height: 1.1; }
+    .stat span { color: var(--muted); font-size: .7rem; }
+    .flag-toggle { display: block; width: 100%; margin-bottom: 14px; padding: 9px; border: 3px solid #171717; border-radius: 10px; background: #FFFFFF; font-weight: 800; }
+    .flag-toggle[aria-pressed="true"] { color: #FFFFFF; background: var(--red); }
+    .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
+    .message b { color: var(--text); }
+    .board { display: grid; gap: 2px; margin: 0 auto 18px; width: 100%; max-width: 540px; padding: 4px; border: 3px solid #171717; border-radius: 10px; background: #171717; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    .cell { aspect-ratio: 1; min-width: 0; padding: 0; border-radius: 3px; color: #171717; background: #4B8ED8; font-weight: 900; font-size: clamp(.8rem, 3.6vw, 1.5rem); line-height: 1; -webkit-tap-highlight-color: transparent; }
+    .cell.open { background: #FFFFFF; cursor: default; }
+    .cell.flag { background: #4B8ED8; }
+    .cell.mine { background: #EF4B3F; }
+    .cell.wrong { background: #FFD166; }
+    .cell.n1 { color: #1f6fd0; } .cell.n2 { color: #2a9d4a; } .cell.n3 { color: #EF4B3F; } .cell.n4 { color: #6a3fc0; } .cell.n5 { color: #b5651d; } .cell.n6 { color: #14a0a0; } .cell.n7 { color: #171717; } .cell.n8 { color: #777; }
+    .cell:focus-visible { outline: 3px solid #EF4B3F; outline-offset: -3px; }
+    .new-game { display: block; width: 100%; padding: 12px; border: 3px solid #171717; border-radius: 10px; color: #FFFFFF; background: var(--red); font-weight: 800; box-shadow: 4px 4px 0 #171717; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <a class="back-button" href="index.html" aria-label="Zur Startseite" title="Zur Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></a>
+      <h1>Minesweeper</h1>
+    </header>
+    <section class="game" aria-label="Minesweeper-Spiel">
+      <div class="sizes">
+        <span>Schwierigkeit</span>
+        <div class="size-buttons" role="group" aria-label="Schwierigkeit">
+          <button class="size active" data-level="easy" type="button">Leicht</button>
+          <button class="size" data-level="medium" type="button">Mittel</button>
+          <button class="size" data-level="hard" type="button">Schwer</button>
+        </div>
+      </div>
+      <div class="stats" aria-label="Spielstatistik">
+        <div class="stat"><strong id="mines">0</strong><span>Minen übrig</span></div>
+        <div class="stat"><strong id="moves">0</strong><span>Felder offen</span></div>
+        <div class="stat"><strong id="time">0:00</strong><span>Zeit</span></div>
+      </div>
+      <button class="flag-toggle" id="flagToggle" type="button" aria-pressed="false">⚑ Flaggen-Modus: aus</button>
+      <p class="message" id="message" aria-live="polite"><b>Bereit?</b> Der erste Zug ist immer sicher.</p>
+      <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
+      <button class="new-game" id="newGame" type="button">Neues Spiel</button>
+    </section>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.92</button>
+    <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
+  </main>
+  <script>
+    const levels = { easy: { cols: 9, rows: 9, mines: 10 }, medium: { cols: 12, rows: 12, mines: 25 }, hard: { cols: 16, rows: 16, mines: 40 } };
+    const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle');
+    let level = 'easy', grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false;
+    const config = () => levels[level];
+    const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
+    function start() {
+      clearInterval(timer); timer = null; clearTimeout(pressTimer); const { cols, rows } = config();
+      grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, flag: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
+      boardElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; boardElement.innerHTML = '';
+      grid.forEach((cell, index) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'cell'; button.dataset.index = index; button.setAttribute('role', 'gridcell'); button.setAttribute('aria-label', 'Verdecktes Feld');
+        button.addEventListener('click', () => { if (longPressed) { longPressed = false; return; } flagMode ? toggleFlag(index) : reveal(index); });
+        button.addEventListener('contextmenu', event => { event.preventDefault(); toggleFlag(index); });
+        button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; clearTimeout(pressTimer); pressTimer = setTimeout(() => { longPressed = true; toggleFlag(index); }, 450); });
+        ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(type => button.addEventListener(type, () => clearTimeout(pressTimer)));
+        boardElement.appendChild(button);
+      });
+      document.getElementById('time').textContent = '0:00'; message.innerHTML = '<b>Bereit?</b> Der erste Zug ist immer sicher.'; updateStats();
+    }
+    function placeMines(safe) {
+      const forbidden = new Set([safe, ...neighbors(safe)]), choices = grid.map((_, index) => index).filter(index => !forbidden.has(index));
+      for (let i = choices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [choices[i], choices[j]] = [choices[j], choices[i]]; }
+      choices.slice(0, config().mines).forEach(index => { grid[index].mine = true; });
+      grid.forEach((cell, index) => { cell.count = neighbors(index).filter(n => grid[n].mine).length; });
+      placed = true; timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000);
+    }
+    function draw(index) {
+      const cell = grid[index], button = boardElement.children[index];
+      button.className = 'cell' + (cell.open ? ' open' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
+      button.textContent = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.open && cell.count > 0 ? cell.count : '';
+      button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : cell.flag ? 'Flagge' : 'Verdecktes Feld');
+    }
+    function updateStats() { document.getElementById('mines').textContent = config().mines - flagCount; document.getElementById('moves').textContent = openCount; }
+    function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; draw(index); updateStats(); }
+    function reveal(index) {
+      if (over || grid[index].flag || grid[index].open) return;
+      if (!placed) placeMines(index);
+      if (grid[index].mine) return lose(index);
+      const queue = [index];
+      while (queue.length) {
+        const current = queue.pop(), cell = grid[current];
+        if (cell.open || cell.flag) continue;
+        cell.open = true; openCount++; draw(current);
+        if (cell.count === 0) queue.push(...neighbors(current));
+      }
+      updateStats();
+      if (openCount === grid.length - config().mines) win();
+    }
+    function finish() { over = true; clearInterval(timer); grid.forEach((_, index) => draw(index)); }
+    function lose(index) { finish(); boardElement.children[index].classList.add('mine'); message.innerHTML = '<b>Boom!</b> Eine Mine wurde ausgelöst. Versuche es noch einmal.'; }
+    function win() { grid.forEach(cell => { if (cell.mine) cell.flag = true; }); flagCount = config().mines; finish(); updateStats(); message.innerHTML = `<b>Gewonnen!</b> Alle Minen gefunden in ${document.getElementById('time').textContent}.`; }
+    flagToggle.addEventListener('click', () => { flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', flagMode); flagToggle.textContent = `⚑ Flaggen-Modus: ${flagMode ? 'an' : 'aus'}`; });
+    document.querySelectorAll('.size').forEach(button => button.addEventListener('click', () => { level = button.dataset.level; document.querySelectorAll('.size').forEach(item => item.classList.toggle('active', item === button)); start(); }));
+    document.getElementById('newGame').addEventListener('click', start); start();
+  </script>
+  <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>

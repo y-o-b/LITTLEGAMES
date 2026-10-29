@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
-  <meta name="description" content="Kleine Spiele für zwischendurch: Tic Tac Toe, Memory und Solitär." />
+  <meta name="description" content="Kleine Spiele für zwischendurch: Tic Tac Toe, Memory, Solitär und Minesweeper." />
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="application-name" content="Spiele" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -27,6 +27,8 @@
     .game-icon { display: block; width: 72px; height: 72px; margin: 0 auto 14px; }
     .card h2 { margin: 0 0 7px; font-size: 1.35rem; }
     .card p { margin-bottom: 22px; font-size: .95rem; }
+    .wip { position: relative; overflow: hidden; }
+    .banner { position: absolute; top: 20px; right: -42px; width: 160px; padding: 4px 0; transform: rotate(40deg); border-block: 3px solid #171717; color: #171717; background: #FFD166; font-size: .8rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .card + .card { margin-top: 14px; }
     a { display: inline-block; padding: 13px 24px; border: 3px solid #171717; border-radius: 10px; color: #FFFFFF; background: var(--purple); font-weight: 800; text-decoration: none; box-shadow: 4px 4px 0 #171717; transition: transform .15s, filter .15s; }
     a:hover { transform: translateY(-2px); filter: brightness(1.1); }
@@ -57,9 +59,16 @@
         <p>Die einfache Variante des klassischen Kartenspiels.</p>
         <a href="solitaire.html">Solitär spielen&nbsp; →</a>
       </div>
+      <div class="card wip">
+        <span class="banner">Im Bau</span>
+        <img class="game-icon" src="icons/minesweeper.svg" width="72" height="72" alt="" />
+        <h2>Minesweeper</h2>
+        <p>Finde alle Minen, ohne eine auszulösen.</p>
+        <a href="minesweeper.html">Minesweeper spielen&nbsp; →</a>
+      </div>
     </div>
     <footer>Eine kleine Spielpause gefällig?</footer>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.91</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.92</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>

@@ -11,6 +11,7 @@ const PRECACHE = [
   'tictactoe.html',
   'memory.html',
   'solitaire.html',
+  'minesweeper.html',
   'solitaire-deals.json',
   'VERSION',
   'manifest.webmanifest',
@@ -28,7 +29,9 @@ const PRECACHE = [
   'icons/memory-180.png',
   'icons/solitaire.svg',
   'icons/solitaire.ico',
-  'icons/solitaire-180.png'
+  'icons/solitaire-180.png',
+  'icons/minesweeper.svg',
+  'icons/minesweeper-180.png'
 ];
 
 self.addEventListener('install', event => {

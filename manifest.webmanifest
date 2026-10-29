@@ -2,7 +2,7 @@
   "id": "./",
   "name": "LittleGames",
   "short_name": "Spiele",
-  "description": "Kleine Spiele für zwischendurch: Tic Tac Toe, Memory und Solitär.",
+  "description": "Kleine Spiele für zwischendurch: Tic Tac Toe, Memory, Solitär und Minesweeper.",
   "lang": "de",
   "dir": "ltr",
   "start_url": "./",
@@ -19,6 +19,7 @@
   "shortcuts": [
     { "name": "Tic Tac Toe", "url": "tictactoe.html", "icons": [{ "src": "icons/tictactoe-180.png", "sizes": "180x180", "type": "image/png" }] },
     { "name": "Memory", "url": "memory.html", "icons": [{ "src": "icons/memory-180.png", "sizes": "180x180", "type": "image/png" }] },
-    { "name": "Solitär", "url": "solitaire.html", "icons": [{ "src": "icons/solitaire-180.png", "sizes": "180x180", "type": "image/png" }] }
+    { "name": "Solitär", "url": "solitaire.html", "icons": [{ "src": "icons/solitaire-180.png", "sizes": "180x180", "type": "image/png" }] },
+    { "name": "Minesweeper", "url": "minesweeper.html", "icons": [{ "src": "icons/minesweeper-180.png", "sizes": "180x180", "type": "image/png" }] }
   ]
 }
