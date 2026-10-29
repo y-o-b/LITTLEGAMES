@@ -51,7 +51,7 @@
     .column.empty { border: 0; }
     .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
-    .card-back { width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .card-back { position: relative; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     .card-back::after, .flip-back::after { content: ''; position: absolute; inset: 18%; border-radius: 22%; background: url('icons/solitaire.svg') center / contain no-repeat; }
     .card-face { position: relative; display: block; height: 100%; padding: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); color: var(--ink); background: var(--paper); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-variant-emoji: text; text-align: left; }
     .card-face.red { color: var(--red); }
@@ -120,7 +120,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.95</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.96</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
