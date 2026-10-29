@@ -50,7 +50,7 @@
     .player { padding: 7px; border: 1px solid transparent; border-radius: 10px; color: var(--muted); text-align: center; font-size: .78rem; }
     .player.active { color: var(--text); border-color: #171717; background: #F5F5F5; }
     .player strong { display: block; color: var(--cyan); font-size: 1.25rem; }
-    .board { display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
+    .board { position: relative; display: grid; gap: 8px; margin: 0 auto 21px; max-width: 540px; }
     .memory-card { position: relative; aspect-ratio: 1; min-width: 0; border-radius: 10px; background: var(--bg); color: transparent; font-size: clamp(1.35rem, 7vw, 2.8rem); border: 3px solid #171717; box-shadow: 3px 3px 0 #171717; transform-style: preserve-3d; transition: transform .25s ease; }
     .board[data-size="8"] .memory-card { font-size: clamp(1.8rem, 8vw, 3.6rem); }
     .board[data-size="12"] .memory-card { font-size: clamp(1.45rem, 6.5vw, 2.8rem); }
@@ -59,6 +59,7 @@
     .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
     .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
     .reveal-count { position: absolute; z-index: 1; left: 5px; bottom: 4px; min-width: 1.35em; padding: .08em .2em; border: 1px solid #171717; border-radius: 5px; color: #171717; background: rgba(255,255,255,.9); font: 800 clamp(.6rem, 2vw, .8rem)/1 Arial, Helvetica, sans-serif; text-align: center; transform: rotateY(180deg); backface-visibility: hidden; pointer-events: none; }
+    .pile-count { position: absolute; z-index: 5000; padding: 3px 7px; border: 2px solid #171717; border-radius: 7px; color: #171717; background: #FFFFFF; box-shadow: 2px 2px 0 #171717; font-size: .72rem; font-weight: 800; line-height: 1.2; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
     .memory-card.flipped, .memory-card.matched { transform: rotateY(180deg); }
     .memory-card.flipped::after, .memory-card.matched::after { background: var(--symbol-bg, #FFFFFF); }
     .memory-card.matched { color: var(--cyan); background: #DDEEFF; box-shadow: 3px 3px 0 #171717; animation: matchedPop .65s ease; }
@@ -103,7 +104,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.24</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.25</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -147,6 +148,8 @@
       const groups = [...piles.entries()].sort(([first], [second]) => first - second), board = boardElement.getBoundingClientRect();
       const sample = boardElement.children[0], cardWidth = sample.getBoundingClientRect().width, cardHeight = sample.getBoundingClientRect().height;
       const columns = Math.min(groups.length, Math.max(1, Math.floor((board.width + 12) / (cardWidth + 12)))), rows = Math.ceil(groups.length / columns), cellWidth = board.width / columns, cellHeight = board.height / rows;
+      const heapRun = run, flights = [];
+      boardElement.querySelectorAll('.pile-count').forEach(label => label.remove());
       let flightIndex = 0;
       groups.forEach(([, pile], pileIndex) => {
         const column = pileIndex % columns, row = Math.floor(pileIndex / columns);
@@ -156,8 +159,18 @@
           const x = board.left + column * cellWidth + (cellWidth - cardWidth) / 2 + stackIndex * 2;
           const y = board.top + row * cellHeight + (cellHeight - cardHeight) / 2 + stackIndex * 2;
           const target = pose(x - rect.left, y - rect.top, jitter(5), 180);
-          if (reduceMotion()) setPose(card, target); else fly(card, target, 650, flightIndex * 45, 'cubic-bezier(.15, .75, .3, 1)');
+          if (reduceMotion()) setPose(card, target); else flights.push(fly(card, target, 650, flightIndex * 45, 'cubic-bezier(.15, .75, .3, 1)'));
           flightIndex++;
+        });
+      });
+      Promise.all(flights).then(() => {
+        if (heapRun !== run || !gamePanel.classList.contains('victory')) return;
+        groups.forEach(([count, pile], pileIndex) => {
+          const column = pileIndex % columns, row = Math.floor(pileIndex / columns);
+          const label = document.createElement('span'); label.className = 'pile-count'; label.textContent = `${count}× aufgedeckt`;
+          label.style.left = `${column * cellWidth + cellWidth / 2 - 3}px`;
+          label.style.top = `${row * cellHeight + (cellHeight - cardHeight) / 2 + (pile.length - 1) * 2 + cardHeight + 8}px`;
+          boardElement.appendChild(label);
         });
       });
     }
@@ -171,7 +184,7 @@
     function beginTimer() { clearInterval(timer); timer = setInterval(() => { seconds++; document.getElementById('time').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }, 1000); }
     // Neues Spiel: alle Karten werden verdeckt, wandern in die Mitte, werden gemischt und dann an ihren Platz ausgeteilt.
     async function start() {
-      clearTimeout(heapTimer); const myRun = ++run, old = [...boardElement.children]; clearInterval(timer);
+      clearTimeout(heapTimer); boardElement.querySelectorAll('.pile-count').forEach(label => label.remove()); const myRun = ++run, old = [...boardElement.children]; clearInterval(timer);
       if (reduceMotion()) { build(false); beginTimer(); return; }
       let stack = old;
       if (!old.length) { build(true); stack = [...boardElement.children]; }
