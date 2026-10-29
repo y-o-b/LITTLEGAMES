@@ -38,6 +38,7 @@
     .stat span { color: var(--muted); font-size: .7rem; }
     .flag-toggle { display: block; width: 100%; margin-bottom: 14px; padding: 9px; border: 3px solid #171717; border-radius: 10px; background: #FFFFFF; font-weight: 800; }
     .flag-toggle[aria-pressed="true"] { color: #FFFFFF; background: var(--red); }
+    .hint { margin: -6px 0 14px; color: var(--muted); text-align: center; font-size: .75rem; }
     .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
     .message b { color: var(--text); }
     .board { display: grid; gap: 2px; margin: 0 auto 18px; width: 100%; max-width: 540px; padding: 4px; border: 3px solid #171717; border-radius: 10px; background: #171717; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
@@ -78,11 +79,12 @@
         <div class="stat"><strong id="time">0:00</strong><span>Zeit</span></div>
       </div>
       <button class="flag-toggle" id="flagToggle" type="button" aria-pressed="false">⚑ Flaggen-Modus: aus</button>
+      <p class="hint">Tipp: Rechtsklick, langes Drücken oder den Flaggen-Modus verwenden.</p>
       <p class="message" id="message" aria-live="polite"><b>Bereit?</b> Der erste Zug ist immer sicher.</p>
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.17</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.18</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
