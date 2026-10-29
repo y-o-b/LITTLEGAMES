@@ -77,17 +77,17 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.11</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.12</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const levels = { easy: { cols: 9, rows: 9, mines: 10 }, medium: { cols: 12, rows: 12, mines: 25 }, hard: { cols: 16, rows: 16, mines: 40 } };
     const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle');
-    let level = 'easy', grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false;
+    let level = 'easy', grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null;
     const config = () => levels[level];
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
-      clearInterval(timer); timer = null; clearTimeout(pressTimer); const { cols, rows } = config();
+      clearInterval(timer); timer = null; clearTimeout(pressTimer); clearTimeout(autoSafeTimer); autoSafeTimer = null; const { cols, rows } = config();
       grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, flag: false, guess: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
       boardElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; boardElement.innerHTML = '';
       grid.forEach((cell, index) => {
@@ -126,7 +126,14 @@
         if (remaining === unknown.length) unknown.forEach(item => certainMines.add(item));
         else unknown.forEach(item => guesses.add(item));
       });
-      if (!certainMines.size) guesses.forEach(index => { grid[index].guess = true; });
+      if (!certainMines.size) {
+        guesses.forEach(index => { grid[index].guess = true; });
+        const safeGuess = [...guesses].find(index => !grid[index].mine);
+        if (safeGuess !== undefined) {
+          clearTimeout(autoSafeTimer);
+          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && grid[safeGuess]?.guess) reveal(safeGuess); }, 700);
+        }
+      }
       grid.forEach((_, index) => draw(index));
     }
     function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
