@@ -84,7 +84,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.21</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.22</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -103,7 +103,7 @@
       grid.forEach((cell, index) => {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'cell'; button.dataset.index = index; button.setAttribute('role', 'gridcell'); button.setAttribute('aria-label', 'Verdecktes Feld');
         button.addEventListener('click', () => { if (longPressed) { longPressed = false; return; } flagMode ? toggleFlag(index) : reveal(index); });
-        button.addEventListener('contextmenu', event => { event.preventDefault(); toggleFlag(index); });
+        button.addEventListener('contextmenu', event => { event.preventDefault(); if (event.button === 2) toggleFlag(index); });
         let pressStart = null;
         button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; pressStart = { x: event.clientX, y: event.clientY }; clearTimeout(pressTimer); pressTimer = setTimeout(() => { pressTimer = null; longPressed = true; toggleFlag(index); }, 450); });
         button.addEventListener('pointermove', event => { if (pressStart && Math.hypot(event.clientX - pressStart.x, event.clientY - pressStart.y) > 12) { clearTimeout(pressTimer); pressTimer = null; pressStart = null; } });
