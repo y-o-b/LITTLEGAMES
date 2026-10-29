@@ -53,7 +53,7 @@
     .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
     .card-back { position: relative; z-index: 0; overflow: hidden; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
-    .card-logo { position: absolute; z-index: 2; inset: 8%; display: block; width: 84%; height: 84%; opacity: .48; object-fit: contain; pointer-events: none; }
+    .card-logo { position: absolute; z-index: 2; inset: 1%; display: block; width: 98%; height: 98%; opacity: .48; object-fit: contain; pointer-events: none; }
     .card-face { position: relative; display: block; height: 100%; padding: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); color: var(--ink); background: var(--paper); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-variant-emoji: text; text-align: left; }
     .card-face.red { color: var(--red); }
     .card-face .corner { position: absolute; font-size: calc(16.8 * var(--u)); line-height: 1; }
@@ -87,7 +87,7 @@
     .controls button:disabled { cursor: not-allowed; opacity: .45; }
     .controls button[hidden] { display: none; }
     button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
-    .flight-back { width: 100%; height: 100%; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .flight-back { position: relative; overflow: hidden; width: 100%; height: 100%; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     button, .pile { -webkit-tap-highlight-color: transparent; }
     .game { -webkit-user-select: none; user-select: none; }
     body.dragging-cards, body.dragging-cards * { cursor: grabbing !important; }
@@ -121,7 +121,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.05</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.06</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -450,7 +450,7 @@
       for (let row = 0; row < 7; row++) for (let column = row; column < 7; column++) order.push(tableau[column][row]);
       order.push(...[...stock].reverse());
       try {
-        const scrollX = window.scrollX, scrollY = window.scrollY, content = (faceUp, item) => { if (faceUp) return face(item); const back = document.createElement('div'); back.className = 'flight-back'; return back; };
+        const scrollX = window.scrollX, scrollY = window.scrollY, content = (faceUp, item) => { if (faceUp) return face(item); const back = document.createElement('div'); back.className = 'flight-back'; const logo = document.createElement('img'); logo.className = 'card-logo'; logo.src = 'icons/solitaire.svg'; logo.alt = ''; back.appendChild(logo); return back; };
         after.forEach(entry => { if (entry.element !== stockElement) entry.element.style.visibility = 'hidden'; });
         order.forEach((item, index) => {
           const from = before.get(item.id), to = after.get(item.id), faceUpNow = Boolean(item.faceUp), flips = from.faceUp !== faceUpNow;
