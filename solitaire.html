@@ -76,7 +76,7 @@
     @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.025) rotate(-.4deg); } 70% { transform: scale(1.01) rotate(.4deg); } }
     @keyframes foundationPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
     @keyframes revealFlip { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
-    @keyframes hideRevealLogo { 0%, 82% { opacity: .48; } 100% { opacity: 0; } }
+    @keyframes hideRevealLogo { 0%, 35% { opacity: .48; } 55%, 100% { opacity: 0; } }
     .game.victory { animation: victoryPulse .8s ease; }
     .game.victory .foundation:not(.empty) { animation: foundationPop .65s ease; }
     .heap { position: absolute; z-index: 5; pointer-events: none; }
@@ -123,7 +123,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.09</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.10</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
