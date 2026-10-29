@@ -84,7 +84,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.20</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.21</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -105,7 +105,7 @@
         button.addEventListener('click', () => { if (longPressed) { longPressed = false; return; } flagMode ? toggleFlag(index) : reveal(index); });
         button.addEventListener('contextmenu', event => { event.preventDefault(); toggleFlag(index); });
         let pressStart = null;
-        button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; pressStart = { x: event.clientX, y: event.clientY }; clearTimeout(pressTimer); pressTimer = setTimeout(() => { pressTimer = null; longPressed = true; if (toggleFlag(index) && typeof navigator.vibrate === 'function') navigator.vibrate(60); }, 450); });
+        button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; pressStart = { x: event.clientX, y: event.clientY }; clearTimeout(pressTimer); pressTimer = setTimeout(() => { pressTimer = null; longPressed = true; toggleFlag(index); }, 450); });
         button.addEventListener('pointermove', event => { if (pressStart && Math.hypot(event.clientX - pressStart.x, event.clientY - pressStart.y) > 12) { clearTimeout(pressTimer); pressTimer = null; pressStart = null; } });
         ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => button.addEventListener(type, () => { clearTimeout(pressTimer); pressTimer = null; pressStart = null; }));
         boardElement.appendChild(button);
@@ -150,7 +150,7 @@
       }
       grid.forEach((_, index) => draw(index));
     }
-    function toggleFlag(index) { if (over) return false; const cell = grid[index]; if (cell.open) return false; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); return true; }
+    function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
     function reveal(index) {
       if (over || grid[index].flag || grid[index].open) return;
       if (!placed) placeMines(index);
