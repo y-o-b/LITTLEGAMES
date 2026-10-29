@@ -33,7 +33,7 @@
     .top-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
     .pile { position: relative; width: var(--card-width); min-width: var(--card-width); height: var(--card-height); padding: 0; border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(9 * var(--u)); background: var(--paper); }
     .stock { color: var(--paper); background: var(--blue); cursor: pointer; box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink); }
-    .stock::after { content: ''; position: absolute; inset: 5%; display: block; border-radius: 22%; background: url('icons/solitaire.svg') center / contain no-repeat; opacity: .48; }
+    .stock::after { content: ''; position: absolute; inset: 1%; display: block; border-radius: 22%; background: url('icons/solitaire.svg') center / contain no-repeat; opacity: .48; }
     .stock.empty::after { content: '↻'; inset: 0; display: grid; border-radius: 0; background: none; opacity: 1; place-items: center; font-size: calc(32 * var(--u)); font-weight: 900; }
     .stock.empty { color: var(--ink); background: var(--paper); }
     .stock.empty { box-shadow: none; }
@@ -121,7 +121,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.04</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.05</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
