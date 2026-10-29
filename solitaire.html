@@ -51,7 +51,8 @@
     .column.empty { border: 0; }
     .playing-card { position: relative; display: block; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; z-index: 1; }
     .playing-card:last-child { margin-bottom: 0; }
-    .card-back { position: relative; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue) url('icons/solitaire.svg') center / 70% auto no-repeat; box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .card-back { position: relative; width: var(--card-width); height: var(--card-height); margin-bottom: calc(0px - var(--card-overlap)); border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .card-logo { position: absolute; inset: 18%; width: 64%; height: 64%; object-fit: contain; pointer-events: none; }
     .card-face { position: relative; display: block; height: 100%; padding: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); color: var(--ink); background: var(--paper); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-variant-emoji: text; text-align: left; }
     .card-face.red { color: var(--red); }
     .card-face .corner { position: absolute; font-size: calc(16.8 * var(--u)); line-height: 1; }
@@ -63,7 +64,7 @@
     .playing-card.revealed { perspective: 700px; }
     .flip-inner { position: absolute; inset: 0; transform-style: preserve-3d; animation: revealFlip .6s ease both; }
     .flip-side { position: absolute; inset: 0; backface-visibility: hidden; }
-    .flip-back { border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue) url('icons/solitaire.svg') center / 70% auto no-repeat; box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
+    .flip-back { border: calc(3 * var(--u)) solid var(--ink); border-radius: calc(8 * var(--u)); background: var(--blue); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink); }
     .flip-front { transform: rotateY(180deg); }
     .playing-card.dragging { z-index: 1000; opacity: .9; pointer-events: none; }
     .playing-card.animating-card { z-index: 9999 !important; }
@@ -119,7 +120,7 @@
       <div class="controls"><button class="undo" id="undo" type="button" disabled>↶ Rückgängig</button><button id="sameGame" class="undo" type="button">↻ Gleiches Deck</button><button id="autoFinish" type="button" hidden>▶ Fertigspielen</button><button id="newGame" type="button">Neues Spiel</button></div>
       <div class="heap" id="heap" aria-hidden="true"></div>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.97</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 0.98</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -218,7 +219,7 @@
       button.setAttribute('aria-label', `${card.name} ${card.suit}`);
       if (isRevealed) {
         const flip = document.createElement('div'); flip.className = 'flip-inner';
-        const back = document.createElement('div'); back.className = 'flip-side flip-back';
+        const back = document.createElement('div'); back.className = 'flip-side flip-back'; const logo = document.createElement('img'); logo.className = 'card-logo'; logo.src = 'icons/solitaire.svg'; logo.alt = ''; back.appendChild(logo);
         const front = face(card); front.classList.add('flip-side', 'flip-front');
         flip.append(back, front); button.appendChild(flip);
       } else button.appendChild(face(card));
@@ -279,7 +280,7 @@
     }
     function render() {
       if (heapMode) return renderHeapView();
-      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
+      tableauElement.innerHTML = ''; tableau.forEach((column, columnIndex) => { const area = document.createElement('div'); area.className = 'column' + (column.length ? '' : ' empty'); area.dataset.column = columnIndex; if (!column.length) { area.tabIndex = 0; area.setAttribute('role', 'button'); area.setAttribute('aria-label', `Leere Spalte ${columnIndex + 1}`); area.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && event.target === area) { event.preventDefault(); moveToTableau(columnIndex); } }); } column.forEach((card, cardIndex) => { if (card.faceUp) area.appendChild(cardButton(card, 'tableau', columnIndex, cardIndex)); else { const back = document.createElement('div'); back.className = 'card-back'; const logo = document.createElement('img'); logo.className = 'card-logo'; logo.src = 'icons/solitaire.svg'; logo.alt = ''; back.appendChild(logo); back.setAttribute('role', 'img'); back.setAttribute('aria-label', 'Verdeckte Karte'); area.appendChild(back); } }); area.addEventListener('click', event => { if (event.target === area) moveToTableau(columnIndex); }); tableauElement.appendChild(area); });
       stockElement.disabled = !stock.length && !waste.length; stockElement.classList.toggle('empty', !stock.length); wasteElement.classList.toggle('has-card', Boolean(waste.length)); wasteElement.innerHTML = ''; if (waste.length) { wasteElement.appendChild(underCard(waste.length > 1 ? waste[waste.length - 2] : null)); wasteElement.appendChild(cardButton(waste[waste.length - 1], 'waste', 0)); }
       foundationsElement.innerHTML = '';
       foundations.forEach((pile, pileIndex) => {
