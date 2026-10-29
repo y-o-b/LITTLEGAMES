@@ -84,7 +84,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.18</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.19</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -104,7 +104,7 @@
         const button = document.createElement('button'); button.type = 'button'; button.className = 'cell'; button.dataset.index = index; button.setAttribute('role', 'gridcell'); button.setAttribute('aria-label', 'Verdecktes Feld');
         button.addEventListener('click', () => { if (longPressed) { longPressed = false; return; } flagMode ? toggleFlag(index) : reveal(index); });
         button.addEventListener('contextmenu', event => { event.preventDefault(); toggleFlag(index); });
-        button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; clearTimeout(pressTimer); pressTimer = setTimeout(() => { longPressed = true; toggleFlag(index); }, 450); });
+        button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; clearTimeout(pressTimer); pressTimer = setTimeout(() => { longPressed = true; if (toggleFlag(index) && typeof navigator.vibrate === 'function') navigator.vibrate(35); }, 450); });
         ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(type => button.addEventListener(type, () => clearTimeout(pressTimer)));
         boardElement.appendChild(button);
       });
@@ -148,7 +148,7 @@
       }
       grid.forEach((_, index) => draw(index));
     }
-    function toggleFlag(index) { if (over) return; const cell = grid[index]; if (cell.open) return; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
+    function toggleFlag(index) { if (over) return false; const cell = grid[index]; if (cell.open) return false; cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); return true; }
     function reveal(index) {
       if (over || grid[index].flag || grid[index].open) return;
       if (!placed) placeMines(index);
