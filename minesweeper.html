@@ -77,7 +77,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.13</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.14</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -134,7 +134,7 @@
         const safeGuess = [...guesses].find(index => !grid[index].mine);
         if (safeGuess !== undefined) {
           clearTimeout(autoSafeTimer);
-          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && grid[safeGuess]?.guess) reveal(safeGuess); }, 700);
+          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && grid[safeGuess]?.guess) { message.innerHTML = '<b>Kein sicherer Tipp möglich.</b> Ein sicheres Feld wurde automatisch geöffnet.'; reveal(safeGuess); } }, 700);
         }
       }
       grid.forEach((_, index) => draw(index));
