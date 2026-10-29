@@ -77,13 +77,16 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.12</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.13</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const levels = { easy: { cols: 9, rows: 9, mines: 10 }, medium: { cols: 12, rows: 12, mines: 25 }, hard: { cols: 16, rows: 16, mines: 40 } };
     const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle');
+    const LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
     let level = 'easy', grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null;
+    try { const savedLevel = localStorage.getItem(LEVEL_STORAGE_KEY); if (levels[savedLevel]) level = savedLevel; } catch (error) { console.warn('Minesweeper-Stufe konnte nicht geladen werden.', error); }
+    document.querySelectorAll('.size').forEach(button => button.classList.toggle('active', button.dataset.level === level));
     const config = () => levels[level];
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
@@ -155,7 +158,7 @@
     function lose(index) { finish(); boardElement.children[index].classList.add('mine'); message.innerHTML = '<b>Boom!</b> Eine Mine wurde ausgelöst. Versuche es noch einmal.'; }
     function win() { grid.forEach(cell => { if (cell.mine) cell.flag = true; }); flagCount = config().mines; finish(); updateStats(); message.innerHTML = `<b>Gewonnen!</b> Alle Minen gefunden in ${document.getElementById('time').textContent}.`; }
     flagToggle.addEventListener('click', () => { flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', flagMode); flagToggle.textContent = `⚑ Flaggen-Modus: ${flagMode ? 'an' : 'aus'}`; });
-    document.querySelectorAll('.size').forEach(button => button.addEventListener('click', () => { level = button.dataset.level; document.querySelectorAll('.size').forEach(item => item.classList.toggle('active', item === button)); start(); }));
+    document.querySelectorAll('.size').forEach(button => button.addEventListener('click', () => { level = button.dataset.level; try { localStorage.setItem(LEVEL_STORAGE_KEY, level); } catch (error) { console.warn('Minesweeper-Stufe konnte nicht gespeichert werden.', error); } document.querySelectorAll('.size').forEach(item => item.classList.toggle('active', item === button)); start(); }));
     document.getElementById('newGame').addEventListener('click', start); start();
   </script>
   <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
