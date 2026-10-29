@@ -58,6 +58,7 @@
     .memory-card::before, .memory-card::after { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; }
     .memory-card::before { content: '?'; color: #FFFFFF; font-size: .8em; font-weight: 800; }
     .memory-card::after { content: attr(data-icon); color: var(--text); background: #FFFFFF; transform: rotateY(180deg); }
+    .reveal-count { position: absolute; z-index: 1; left: 5px; bottom: 4px; min-width: 1.35em; padding: .08em .2em; border: 1px solid #171717; border-radius: 5px; color: #171717; background: rgba(255,255,255,.9); font: 800 clamp(.6rem, 2vw, .8rem)/1 Arial, Helvetica, sans-serif; text-align: center; transform: rotateY(180deg); backface-visibility: hidden; pointer-events: none; }
     .memory-card.flipped, .memory-card.matched { transform: rotateY(180deg); }
     .memory-card.flipped::after, .memory-card.matched::after { background: var(--symbol-bg, #FFFFFF); }
     .memory-card.matched { color: var(--cyan); background: #DDEEFF; box-shadow: 3px 3px 0 #171717; animation: matchedPop .65s ease; }
@@ -102,7 +103,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.22</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.23</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -180,7 +181,9 @@
     function updateStats() { document.getElementById('pairs').textContent = pairs; document.getElementById('moves').textContent = moves; document.querySelector('#player1 strong').textContent = playerScores[0]; document.querySelector('#player2 strong').textContent = playerScores[1]; document.getElementById('player1').classList.toggle('active', currentPlayer === 1); document.getElementById('player2').classList.toggle('active', currentPlayer === 2); }
     function flip(card) {
       if (locked || card === first || card.classList.contains('matched')) return;
-      card.classList.add('flipped'); card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}`);
+      const reveals = Number(card.dataset.reveals || 0) + 1; card.dataset.reveals = reveals;
+      let count = card.querySelector('.reveal-count'); if (!count) { count = document.createElement('span'); count.className = 'reveal-count'; card.appendChild(count); }
+      count.textContent = reveals; card.classList.add('flipped'); card.setAttribute('aria-label', `Karte ${Number(card.dataset.index) + 1}: ${card.dataset.icon}, ${reveals}× aufgedeckt`);
       if (!first) { first = card; return; }
       second = card; moves++; updateStats(); locked = true;
       if (first.dataset.icon === second.dataset.icon) { first.classList.add('matched'); second.classList.add('matched'); pairs++; if (mode === 'two') playerScores[currentPlayer - 1]++; first = second = null; locked = false; updateStats(); if (pairs === cards.length / 2) { clearInterval(timer); const result = mode === 'two' ? (playerScores[0] === playerScores[1] ? 'Unentschieden!' : `Spieler ${playerScores[0] > playerScores[1] ? 1 : 2} gewinnt!`) : 'Gewonnen!'; gamePanel.classList.add('victory'); heapTimer = setTimeout(startHeap, 800); document.getElementById('message').innerHTML = `<b>${result}</b> ${moves} Züge in ${document.getElementById('time').textContent}.`; } else if (mode === 'two') document.getElementById('message').innerHTML = `<b>Spieler ${currentPlayer} bleibt dran.</b> Noch ein Versuch!`; }
