@@ -104,7 +104,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.25</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.26</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -167,7 +167,7 @@
         if (heapRun !== run || !gamePanel.classList.contains('victory')) return;
         groups.forEach(([count, pile], pileIndex) => {
           const column = pileIndex % columns, row = Math.floor(pileIndex / columns);
-          const label = document.createElement('span'); label.className = 'pile-count'; label.textContent = `${count}× aufgedeckt`;
+          const label = document.createElement('span'); label.className = 'pile-count'; label.textContent = `${pile.length} ${pile.length === 1 ? 'Karte' : 'Karten'}`;
           label.style.left = `${column * cellWidth + cellWidth / 2 - 3}px`;
           label.style.top = `${row * cellHeight + (cellHeight - cardHeight) / 2 + (pile.length - 1) * 2 + cardHeight + 8}px`;
           boardElement.appendChild(label);
