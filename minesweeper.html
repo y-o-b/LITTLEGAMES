@@ -48,7 +48,9 @@
     .cell.mine { background: #EF4B3F; }
     .cell.wrong { background: #FFD166; }
     @keyframes flagWave { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
-    .cell.flag.wave { animation: flagWave .45s ease-in-out 3; transform-origin: 50% 100%; }
+    .cell.flag.wave { animation: none; }
+    .flag-icon { display: inline-block; transform-origin: 50% 100%; }
+    .cell.flag.wave .flag-icon { animation: flagWave .45s ease-in-out 3; }
     .cell.n1 { color: #1f6fd0; } .cell.n2 { color: #2a9d4a; } .cell.n3 { color: #EF4B3F; } .cell.n4 { color: #6a3fc0; } .cell.n5 { color: #b5651d; } .cell.n6 { color: #14a0a0; } .cell.n7 { color: #171717; } .cell.n8 { color: #777; }
     .cell:focus-visible { outline: 3px solid #EF4B3F; outline-offset: -3px; }
     @media (prefers-reduced-motion: reduce) { .cell.flag.wave { animation: none; } }
@@ -80,7 +82,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.16</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.17</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -116,7 +118,8 @@
     function draw(index) {
       const cell = grid[index], button = boardElement.children[index];
       button.className = 'cell' + (cell.open ? ' open' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (cell.guess && !cell.flag && !cell.open && !over ? ' guess' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
-      button.textContent = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.open && cell.count > 0 ? cell.count : '';
+      const label = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.open && cell.count > 0 ? cell.count : '';
+      button.replaceChildren(); if (label) { const content = document.createElement('span'); content.className = cell.flag && (over || !cell.open) ? 'flag-icon' : ''; content.textContent = label; button.appendChild(content); }
       button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : cell.flag ? 'Flagge' : 'Verdecktes Feld');
     }
     function updateStats() { document.getElementById('mines').textContent = config().mines - flagCount; document.getElementById('moves').textContent = openCount; }
