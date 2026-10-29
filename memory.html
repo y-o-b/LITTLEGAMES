@@ -103,7 +103,7 @@
       <div class="board" id="board" role="grid" aria-label="Memory-Spielfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.23</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.24</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -140,14 +140,25 @@
     const bell = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
     const centerOffset = card => ({ x: boardElement.offsetLeft + boardElement.clientWidth / 2 - (card.offsetLeft + card.offsetWidth / 2), y: boardElement.offsetTop + boardElement.clientHeight / 2 - (card.offsetTop + card.offsetHeight / 2) });
     let run = 0, heapTimer = null;
-    // Nach dem Sieg fliegen alle Karten auf einen wilden Haufen (offen, zufällig gedreht).
+    // Nach dem Sieg sammeln sich Karten mit gleicher Aufdeckzahl in eigenen Haufen.
     function startHeap() {
-      const items = shuffle([...boardElement.children]);
-      items.forEach((card, index) => {
-        card.style.zIndex = 10 + index;
-        const center = centerOffset(card), bw = boardElement.clientWidth, bh = boardElement.clientHeight;
-        const target = pose(center.x + bell() * (bw - card.offsetWidth) / 2, center.y + bell() * (bh - card.offsetHeight) / 2, jitter(75), 180);
-        if (reduceMotion()) setPose(card, target); else fly(card, target, 650, index * 55, 'cubic-bezier(.15, .75, .3, 1)');
+      const piles = new Map();
+      [...boardElement.children].forEach(card => { const count = Number(card.dataset.reveals) || 1; if (!piles.has(count)) piles.set(count, []); piles.get(count).push(card); });
+      const groups = [...piles.entries()].sort(([first], [second]) => first - second), board = boardElement.getBoundingClientRect();
+      const sample = boardElement.children[0], cardWidth = sample.getBoundingClientRect().width, cardHeight = sample.getBoundingClientRect().height;
+      const columns = Math.min(groups.length, Math.max(1, Math.floor((board.width + 12) / (cardWidth + 12)))), rows = Math.ceil(groups.length / columns), cellWidth = board.width / columns, cellHeight = board.height / rows;
+      let flightIndex = 0;
+      groups.forEach(([, pile], pileIndex) => {
+        const column = pileIndex % columns, row = Math.floor(pileIndex / columns);
+        shuffle(pile).forEach((card, stackIndex) => {
+          card.style.zIndex = String(10 + pileIndex * 100 + stackIndex);
+          const rect = card.getBoundingClientRect();
+          const x = board.left + column * cellWidth + (cellWidth - cardWidth) / 2 + stackIndex * 2;
+          const y = board.top + row * cellHeight + (cellHeight - cardHeight) / 2 + stackIndex * 2;
+          const target = pose(x - rect.left, y - rect.top, jitter(5), 180);
+          if (reduceMotion()) setPose(card, target); else fly(card, target, 650, flightIndex * 45, 'cubic-bezier(.15, .75, .3, 1)');
+          flightIndex++;
+        });
       });
     }
     function build(stacked) {
