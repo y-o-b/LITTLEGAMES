@@ -86,7 +86,7 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.28</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.29</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -97,6 +97,7 @@
     try { const savedLevel = localStorage.getItem(LEVEL_STORAGE_KEY); if (levels[savedLevel]) level = savedLevel; } catch (error) { console.warn('Minesweeper-Stufe konnte nicht geladen werden.', error); }
     document.querySelectorAll('.size').forEach(button => button.classList.toggle('active', button.dataset.level === level));
     const config = () => levels[level];
+    const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
       clearInterval(timer); timer = null; clearTimeout(pressTimer); clearTimeout(autoSafeTimer); revealTimers.forEach(clearTimeout); revealTimers = []; revealing = false; autoSafeTimer = null; const { cols, rows } = config();
