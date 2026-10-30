@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#4B8ED8" />
-  <meta name="description" content="Minesweeper: Finde alle Minen, ohne eine auszulösen." />
+  <meta name="description" content="Detektor: Finde Minen, markiere falsche Flaggen und folge dem Metalldetektor." />
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="application-name" content="Spiele" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="icon" href="icons/minesweeper.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/minesweeper-180.png" />
-  <title>Minesweeper</title>
+  <title>Detektor</title>
   <style>
     :root { --bg: #4B8ED8; --panel: #FFFFFF; --text: #171717; --muted: rgba(23,23,23,.7); --red: #EF4B3F; }
     * { box-sizing: border-box; }
@@ -76,9 +76,9 @@
   <main class="app">
     <header>
       <a class="back-button" href="index.html" aria-label="Zur Startseite" title="Zur Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></a>
-      <h1>Minesweeper</h1>
+      <h1>Detektor</h1>
     </header>
-    <section class="game" aria-label="Minesweeper-Spiel">
+    <section class="game" aria-label="Detektor-Spiel">
       <div class="settings" aria-label="Spielfeldeinstellungen">
         <div class="setting-row">
           <span>Größe</span>
@@ -111,7 +111,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.39</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.40</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -128,13 +128,13 @@
       if (validSavedMineCount) mineCount = Number(savedMineCount);
       const legacyPresets = { easy: ['9x9', 10], medium: ['12x12', 25], hard: ['12x21', 40] }, legacy = legacyPresets[localStorage.getItem(LEVEL_STORAGE_KEY)];
       if (legacy) { if (!boardSizes[savedSize]) boardSize = legacy[0]; if (!validSavedMineCount) mineCount = legacy[1]; }
-    } catch (error) { console.warn('Minesweeper-Einstellungen konnten nicht geladen werden.', error); }
+    } catch (error) { console.warn('Detektor-Einstellungen konnten nicht geladen werden.', error); }
     mineCount = Math.min(mineCount, maxMineCount(boardSize));
     document.querySelectorAll('[data-size]').forEach(button => button.classList.toggle('active', button.dataset.size === boardSize));
     function updateMineControl() { const max = maxMineCount(boardSize); mineCount = Math.min(mineCount, max); mineCountInput.max = max; mineCountInput.value = mineCount; mineCountOutput.value = `${mineCount} / ${max}`; mineCountOutput.textContent = `${mineCount} / ${max}`; }
     updateMineControl();
     const config = () => ({ ...boardSizes[boardSize], mines: mineCount });
-    function saveSettings() { try { localStorage.setItem(SIZE_STORAGE_KEY, boardSize); localStorage.setItem(MINE_COUNT_STORAGE_KEY, String(mineCount)); } catch (error) { console.warn('Minesweeper-Einstellungen konnten nicht gespeichert werden.', error); } }
+    function saveSettings() { try { localStorage.setItem(SIZE_STORAGE_KEY, boardSize); localStorage.setItem(MINE_COUNT_STORAGE_KEY, String(mineCount)); } catch (error) { console.warn('Detektor-Einstellungen konnten nicht gespeichert werden.', error); } }
     const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
