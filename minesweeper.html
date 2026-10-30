@@ -50,6 +50,8 @@
     .message b { color: var(--text); }
     .board { display: grid; gap: 2px; margin: 0 auto 18px; width: 100%; max-width: 540px; padding: 4px; border: 3px solid #171717; border-radius: 10px; background: #171717; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
     .cell { aspect-ratio: 1; min-width: 0; min-height: 0; overflow: hidden; padding: 0; border-radius: 3px; color: #171717; background: #4B8ED8; font-weight: 900; font-size: clamp(1rem, 5vw, 1.5rem); line-height: 1; -webkit-tap-highlight-color: transparent; }
+    .shovel-action { position: absolute; z-index: 2; top: 50%; left: 50%; display: grid; place-items: center; width: 84%; aspect-ratio: 1; border: 2px solid #171717; border-radius: 8px; background: rgba(255,255,255,.95); box-shadow: 2px 2px 0 #171717; transform: translate(-50%, -50%); }
+    .shovel-action svg { display: block; width: 100%; height: 100%; }
     .cell.open { background: #FFFFFF; cursor: default; }
     @keyframes revealCell { from { opacity: .45; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
     .cell.opening { animation: revealCell .18s ease-out; }
@@ -111,7 +113,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.42</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.43</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -119,7 +121,7 @@
     const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game'), detectorElement = document.getElementById('metalDetector');
     const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
-    let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0;
+    let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0, shovelIndex = null;
     const maxMineCount = size => ({ '9x9': 60, '12x12': 80, '12x21': 120 })[size];
     try {
       const savedSize = localStorage.getItem(SIZE_STORAGE_KEY), savedMineCount = localStorage.getItem(MINE_COUNT_STORAGE_KEY);
@@ -139,6 +141,7 @@
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
       stopDetector();
+      shovelIndex = null;
       gamePanel.classList.toggle('medium-mode', boardSize === '12x12'); gamePanel.classList.toggle('hard-mode', boardSize === '12x21');
       clearInterval(timer); timer = null; clearTimeout(pressTimer); clearTimeout(autoSafeTimer); revealTimers.forEach(clearTimeout); revealTimers = []; revealing = false; autoSafeTimer = null; const { cols, rows } = config();
       grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, opening: false, flag: false, wrongFlag: false, hint: '', guess: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
@@ -146,7 +149,12 @@
       grid.forEach((cell, index) => {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'cell'; button.dataset.index = index; button.setAttribute('role', 'gridcell'); button.setAttribute('aria-label', 'Verdecktes Feld');
         button.addEventListener('animationend', event => { if (event.animationName === 'revealCell') { cell.opening = false; button.classList.remove('opening'); } });
-        button.addEventListener('click', () => { if (longPressed) { longPressed = false; return; } flagMode ? toggleFlag(index) : reveal(index); });
+        button.addEventListener('click', event => {
+          if (longPressed) { longPressed = false; return; }
+          if (flagMode) { clearShovel(); toggleFlag(index); return; }
+          if (shovelIndex === index && (event.target.closest?.('.shovel-action') || event.detail === 0)) { clearShovel(); reveal(index); return; }
+          selectShovel(index);
+        });
         button.addEventListener('contextmenu', event => { event.preventDefault(); if (event.button === 2) toggleFlag(index); });
         let pressStart = null;
         button.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; longPressed = false; pressStart = { x: event.clientX, y: event.clientY }; clearTimeout(pressTimer); pressTimer = setTimeout(() => { pressTimer = null; longPressed = true; toggleFlag(index); }, 450); });
@@ -168,7 +176,17 @@
       button.className = 'cell' + (cell.open ? ' open' : '') + (cell.opening ? ' opening' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (cell.hint ? ` hint-${cell.hint}` : '') + (cell.wrongFlag && cell.flag ? ' wrong-flag' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
       const label = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.hint && !cell.open ? '?' : cell.open && cell.count > 0 ? cell.count : '';
       button.replaceChildren(); if (label) { const content = document.createElement('span'); content.className = cell.flag && (over || !cell.open) ? 'flag-icon' : ''; content.textContent = label; button.appendChild(content); }
-      button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : cell.wrongFlag && cell.flag ? 'Falsch gesetzte Flagge' : cell.hint === 'safe' ? 'Sicheres Feld' : cell.hint === 'mine' ? 'Sichere Mine' : cell.flag ? 'Flagge' : 'Verdecktes Feld');
+      if (shovelIndex === index && !cell.open && !cell.flag && !over) {
+        const shovel = document.createElement('span'); shovel.className = 'shovel-action'; shovel.setAttribute('aria-hidden', 'true');
+        shovel.innerHTML = '<svg viewBox="0 0 32 32"><path d="M9 5h10M14 6v15" fill="none" stroke="#171717" stroke-width="3.5" stroke-linecap="round"/><path d="m14 19-7 8q7 4 15 0l-8-8Z" fill="#EF4B3F" stroke="#171717" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+        button.appendChild(shovel);
+      }
+      button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : shovelIndex === index && !cell.flag ? 'Schaufel über dem Feld; erneut aktivieren, um zu öffnen' : cell.wrongFlag && cell.flag ? 'Falsch gesetzte Flagge' : cell.hint === 'safe' ? 'Sicheres Feld' : cell.hint === 'mine' ? 'Sichere Mine' : cell.flag ? 'Flagge' : 'Verdecktes Feld');
+    }
+    function clearShovel() { const previous = shovelIndex; shovelIndex = null; if (previous !== null && grid[previous] && boardElement.children[previous]) draw(previous); }
+    function selectShovel(index) {
+      const cell = grid[index]; if (over || revealing || !cell || cell.open || cell.flag || shovelIndex === index) return;
+      const previous = shovelIndex; shovelIndex = index; if (previous !== null && grid[previous]) draw(previous); draw(index);
     }
     function updateStats() { document.getElementById('mines').textContent = config().mines - flagCount; document.getElementById('moves').textContent = openCount; }
     function hasWrongFlags() { return grid.some(cell => cell.flag && !cell.mine); }
@@ -227,7 +245,7 @@
     }
     function showHint() {
       if (over || revealing) return;
-      clearTimeout(autoSafeTimer); autoSafeTimer = null; stopDetector(); clearHints();
+      clearTimeout(autoSafeTimer); autoSafeTimer = null; stopDetector(); clearShovel(); clearHints();
       if (!placed) { message.innerHTML = '<b>Decke zuerst ein Feld auf.</b> Danach kann ich einen Hinweis geben.'; return; }
       const wrongFlags = grid.filter(cell => cell.flag && !cell.mine);
       if (wrongFlags.length) {
@@ -243,10 +261,10 @@
       const total = certainMines.size + certainSafe.size;
       message.innerHTML = total ? `<b>Hinweis:</b> ${certainSafe.size} sichere Felder und ${certainMines.size} sichere Minen markiert.` : '<b>Keine falschen Flaggen.</b> Aktuell ist kein weiteres Feld logisch entscheidbar.';
     }
-    function toggleFlag(index) { if (over || revealing) return; const cell = grid[index]; if (cell.open) return; clearHints(); cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
+    function toggleFlag(index) { if (over || revealing) return; const cell = grid[index]; if (cell.open) return; clearShovel(); clearHints(); cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
     function reveal(index) {
       if (over || revealing || grid[index].flag || grid[index].open) return;
-      stopDetector();
+      stopDetector(); clearShovel();
       clearHints();
       if (!placed) placeMines(index);
       if (grid[index].mine) return lose(index);
@@ -269,7 +287,7 @@
     function finish() { over = true; revealing = false; revealTimers.forEach(clearTimeout); revealTimers = []; clearInterval(timer); grid.forEach((_, index) => draw(index)); }
     function lose(index) { finish(); boardElement.children[index].classList.add('mine'); message.innerHTML = '<b>Boom!</b> Eine Mine wurde ausgelöst. Versuche es noch einmal.'; }
     function win() { grid.forEach(cell => { if (cell.mine) cell.flag = true; }); flagCount = config().mines; finish(); updateStats(); boardElement.querySelectorAll('.cell.flag').forEach((cell, index) => { cell.style.animationDelay = `${index * 35}ms`; cell.classList.add('wave'); }); message.innerHTML = `<b>Gewonnen!</b> Alle Minen gefunden in ${document.getElementById('time').textContent}.`; }
-    flagToggle.addEventListener('click', () => { flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', flagMode); flagToggle.textContent = `⚑ Flaggen-Modus: ${flagMode ? 'an' : 'aus'}`; });
+    flagToggle.addEventListener('click', () => { clearShovel(); flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', flagMode); flagToggle.textContent = `⚑ Flaggen-Modus: ${flagMode ? 'an' : 'aus'}`; });
     document.getElementById('hintButton').addEventListener('click', showHint);
     document.querySelectorAll('[data-size]').forEach(button => button.addEventListener('click', () => { boardSize = button.dataset.size; updateMineControl(); saveSettings(); document.querySelectorAll('[data-size]').forEach(item => item.classList.toggle('active', item === button)); start(); }));
     mineCountInput.addEventListener('input', () => { mineCountOutput.value = `${mineCountInput.value} / ${mineCountInput.max}`; mineCountOutput.textContent = mineCountOutput.value; });
