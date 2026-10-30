@@ -113,7 +113,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.45</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.46</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -203,7 +203,7 @@
         detectorTimers.push(setTimeout(() => {
           if (run !== detectorRun) return;
           detectorTimers = []; detectorElement.classList.remove('active');
-          if (!over && !hasWrongFlags() && grid[target]?.guess) { message.innerHTML = '<b>Kein sicherer Tipp möglich.</b> Der Metalldetektor hat ein sicheres Feld gefunden und öffnet es.'; reveal(target); }
+          if (!over && !hasWrongFlags() && grid[target] && !grid[target].open && !grid[target].flag && !grid[target].mine) { message.innerHTML = '<b>Kein sicherer Tipp möglich.</b> Der Metalldetektor hat ein sicheres Feld gefunden und öffnet es.'; reveal(target); }
         }, 350));
       }, stops.length * delay + 100));
     }
@@ -235,10 +235,12 @@
       });
       if (!certainMines.size && !certainSafe.size) {
         guesses.forEach(index => { grid[index].guess = true; });
-        const safeGuesses = [...guesses].filter(index => !grid[index].mine);
+        let safeGuesses = [...guesses].filter(index => !grid[index].mine);
+        if (!safeGuesses.length) safeGuesses = grid.map((cell, index) => !cell.open && !cell.flag && !cell.mine ? index : -1).filter(index => index >= 0);
         const safeGuess = safeGuesses[Math.floor(Math.random() * safeGuesses.length)];
         if (safeGuess !== undefined && !hasWrongFlags()) {
-          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && !hasWrongFlags() && grid[safeGuess]?.guess) sweepDetector([...guesses], safeGuess); }, 700);
+          const scanCandidates = guesses.size ? [...guesses] : [safeGuess];
+          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && !hasWrongFlags() && !grid[safeGuess]?.open) sweepDetector(scanCandidates, safeGuess); }, 700);
         }
       }
       grid.forEach((_, index) => draw(index));
