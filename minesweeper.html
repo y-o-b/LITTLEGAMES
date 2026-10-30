@@ -33,6 +33,9 @@
     .setting-buttons { display: flex; justify-content: flex-end; gap: 5px; }
     .setting-button { min-width: 0; padding: 7px 8px; border: 2px solid #171717; border-radius: 8px; color: var(--muted); background: #FFFFFF; font-size: .78rem; white-space: nowrap; }
     .setting-button.active { color: #FFFFFF; background: var(--red); }
+    .mine-setting { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    .mine-setting input { width: 100%; min-width: 0; margin: 0; accent-color: var(--red); }
+    .mine-setting output { min-width: 3.8em; color: var(--text); font-size: .78rem; font-weight: 800; text-align: right; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; text-align: center; }
     .stat { padding: 8px 3px; border: 2px solid #171717; border-radius: 10px; }
     .stat strong { display: block; font-size: 1.3rem; line-height: 1.1; }
@@ -84,11 +87,10 @@
           </div>
         </div>
         <div class="setting-row">
-          <span>Anzahl Minen</span>
-          <div class="setting-buttons" role="group" aria-label="Minenanzahl">
-            <button class="setting-button" data-mines="10" type="button">10</button>
-            <button class="setting-button" data-mines="25" type="button">25</button>
-            <button class="setting-button" data-mines="40" type="button">40</button>
+          <label for="mineCount">Anzahl Minen</label>
+          <div class="mine-setting">
+            <input id="mineCount" type="range" min="1" max="28" value="10" />
+            <output id="mineCountValue" for="mineCount">10 / 28</output>
           </div>
         </div>
       </div>
@@ -106,23 +108,28 @@
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.36</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.37</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
-    const boardSizes = { '9x9': { cols: 9, rows: 9 }, '12x12': { cols: 12, rows: 12 }, '12x21': { cols: 12, rows: 21 } }, mineCounts = [10, 25, 40];
+    const boardSizes = { '9x9': { cols: 9, rows: 9 }, '12x12': { cols: 12, rows: 12 }, '12x21': { cols: 12, rows: 21 } };
     const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game');
+    const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
     let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false;
+    const maxMineCount = size => Math.min(boardSizes[size].cols * boardSizes[size].rows - 9, Math.floor(boardSizes[size].cols * boardSizes[size].rows * .35));
     try {
       const savedSize = localStorage.getItem(SIZE_STORAGE_KEY), savedMineCount = localStorage.getItem(MINE_COUNT_STORAGE_KEY);
+      const validSavedMineCount = Number.isInteger(Number(savedMineCount)) && Number(savedMineCount) > 0;
       if (boardSizes[savedSize]) boardSize = savedSize;
-      if (mineCounts.includes(Number(savedMineCount))) mineCount = Number(savedMineCount);
+      if (validSavedMineCount) mineCount = Number(savedMineCount);
       const legacyPresets = { easy: ['9x9', 10], medium: ['12x12', 25], hard: ['12x21', 40] }, legacy = legacyPresets[localStorage.getItem(LEVEL_STORAGE_KEY)];
-      if (legacy) { if (!boardSizes[savedSize]) boardSize = legacy[0]; if (!mineCounts.includes(Number(savedMineCount))) mineCount = legacy[1]; }
+      if (legacy) { if (!boardSizes[savedSize]) boardSize = legacy[0]; if (!validSavedMineCount) mineCount = legacy[1]; }
     } catch (error) { console.warn('Minesweeper-Einstellungen konnten nicht geladen werden.', error); }
+    mineCount = Math.min(mineCount, maxMineCount(boardSize));
     document.querySelectorAll('[data-size]').forEach(button => button.classList.toggle('active', button.dataset.size === boardSize));
-    document.querySelectorAll('[data-mines]').forEach(button => button.classList.toggle('active', Number(button.dataset.mines) === mineCount));
+    function updateMineControl() { const max = maxMineCount(boardSize); mineCount = Math.min(mineCount, max); mineCountInput.max = max; mineCountInput.value = mineCount; mineCountOutput.value = `${mineCount} / ${max}`; mineCountOutput.textContent = `${mineCount} / ${max}`; }
+    updateMineControl();
     const config = () => ({ ...boardSizes[boardSize], mines: mineCount });
     function saveSettings() { try { localStorage.setItem(SIZE_STORAGE_KEY, boardSize); localStorage.setItem(MINE_COUNT_STORAGE_KEY, String(mineCount)); } catch (error) { console.warn('Minesweeper-Einstellungen konnten nicht gespeichert werden.', error); } }
     const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -242,8 +249,9 @@
     function win() { grid.forEach(cell => { if (cell.mine) cell.flag = true; }); flagCount = config().mines; finish(); updateStats(); boardElement.querySelectorAll('.cell.flag').forEach((cell, index) => { cell.style.animationDelay = `${index * 35}ms`; cell.classList.add('wave'); }); message.innerHTML = `<b>Gewonnen!</b> Alle Minen gefunden in ${document.getElementById('time').textContent}.`; }
     flagToggle.addEventListener('click', () => { flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', flagMode); flagToggle.textContent = `⚑ Flaggen-Modus: ${flagMode ? 'an' : 'aus'}`; });
     document.getElementById('hintButton').addEventListener('click', showHint);
-    document.querySelectorAll('[data-size]').forEach(button => button.addEventListener('click', () => { boardSize = button.dataset.size; saveSettings(); document.querySelectorAll('[data-size]').forEach(item => item.classList.toggle('active', item === button)); start(); }));
-    document.querySelectorAll('[data-mines]').forEach(button => button.addEventListener('click', () => { mineCount = Number(button.dataset.mines); saveSettings(); document.querySelectorAll('[data-mines]').forEach(item => item.classList.toggle('active', item === button)); start(); }));
+    document.querySelectorAll('[data-size]').forEach(button => button.addEventListener('click', () => { boardSize = button.dataset.size; updateMineControl(); saveSettings(); document.querySelectorAll('[data-size]').forEach(item => item.classList.toggle('active', item === button)); start(); }));
+    mineCountInput.addEventListener('input', () => { mineCountOutput.value = `${mineCountInput.value} / ${mineCountInput.max}`; mineCountOutput.textContent = mineCountOutput.value; });
+    mineCountInput.addEventListener('change', () => { mineCount = Number(mineCountInput.value); updateMineControl(); saveSettings(); start(); });
     document.getElementById('newGame').addEventListener('click', start); start();
   </script>
   <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
