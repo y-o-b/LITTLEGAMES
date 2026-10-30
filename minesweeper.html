@@ -111,7 +111,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.41</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.42</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -120,7 +120,7 @@
     const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
     let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0;
-    const maxMineCount = size => ({ '9x9': 40, '12x12': 60, '12x21': 100 })[size];
+    const maxMineCount = size => ({ '9x9': 60, '12x12': 80, '12x21': 120 })[size];
     try {
       const savedSize = localStorage.getItem(SIZE_STORAGE_KEY), savedMineCount = localStorage.getItem(MINE_COUNT_STORAGE_KEY);
       const validSavedMineCount = Number.isInteger(Number(savedMineCount)) && Number(savedMineCount) > 0;
