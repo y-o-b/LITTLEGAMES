@@ -59,6 +59,9 @@
     .cell.wrong { background: #FFD166; }
     .cell.hint-safe, .cell.hint-mine { color: #FFFFFF; background: var(--bg); }
     .cell.wrong-flag { outline: 4px solid #EF4B3F; outline-offset: -5px; }
+    .metal-detector { position: fixed; z-index: 1000; display: none; width: 46px; height: 46px; margin: -23px 0 0 -23px; pointer-events: none; filter: drop-shadow(2px 2px 1px rgba(0,0,0,.45)); transition: left .12s linear, top .12s linear; }
+    .metal-detector.active { display: block; }
+    .metal-detector svg { display: block; width: 100%; height: 100%; overflow: visible; }
     @keyframes flagWave { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
     .cell.flag.wave { animation: none; }
     .flag-icon { display: inline-block; transform-origin: 50% 100%; }
@@ -106,17 +109,18 @@
       <p class="hint">Tipp: Rechtsklick, langes Drücken oder den Flaggen-Modus verwenden.</p>
       <p class="message" id="message" aria-live="polite"><b>Bereit?</b> Der erste Zug ist immer sicher.</p>
       <div class="board" id="board" role="grid" aria-label="Minenfeld"></div>
+      <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.37</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.38</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
     const boardSizes = { '9x9': { cols: 9, rows: 9 }, '12x12': { cols: 12, rows: 12 }, '12x21': { cols: 12, rows: 21 } };
-    const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game');
+    const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game'), detectorElement = document.getElementById('metalDetector');
     const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
-    let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false;
+    let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0;
     const maxMineCount = size => Math.min(boardSizes[size].cols * boardSizes[size].rows - 9, Math.floor(boardSizes[size].cols * boardSizes[size].rows * .35));
     try {
       const savedSize = localStorage.getItem(SIZE_STORAGE_KEY), savedMineCount = localStorage.getItem(MINE_COUNT_STORAGE_KEY);
@@ -135,6 +139,7 @@
     const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
+      stopDetector();
       gamePanel.classList.toggle('medium-mode', boardSize === '12x12'); gamePanel.classList.toggle('hard-mode', boardSize === '12x21');
       clearInterval(timer); timer = null; clearTimeout(pressTimer); clearTimeout(autoSafeTimer); revealTimers.forEach(clearTimeout); revealTimers = []; revealing = false; autoSafeTimer = null; const { cols, rows } = config();
       grid = Array.from({ length: cols * rows }, () => ({ mine: false, open: false, opening: false, flag: false, wrongFlag: false, hint: '', guess: false, count: 0 })); over = false; placed = false; seconds = openCount = flagCount = 0;
@@ -169,6 +174,22 @@
     function updateStats() { document.getElementById('mines').textContent = config().mines - flagCount; document.getElementById('moves').textContent = openCount; }
     function hasWrongFlags() { return grid.some(cell => cell.flag && !cell.mine); }
     function clearHints() { grid.forEach(cell => { cell.hint = ''; cell.wrongFlag = false; }); }
+    function stopDetector() { detectorRun++; detectorTimers.forEach(clearTimeout); detectorTimers = []; detectorElement.classList.remove('active'); }
+    function moveDetector(index) { const cell = boardElement.children[index], rect = cell.getBoundingClientRect(); detectorElement.style.left = `${rect.left + rect.width / 2}px`; detectorElement.style.top = `${rect.top + rect.height / 2}px`; }
+    function sweepDetector(marked, target) {
+      stopDetector(); const run = detectorRun, stops = [...new Set(marked)].sort((a, b) => a - b); if (!stops.includes(target)) stops.push(target);
+      detectorElement.classList.add('active'); moveDetector(stops[0]);
+      const delay = Math.max(30, Math.min(110, 900 / stops.length));
+      stops.forEach((index, step) => detectorTimers.push(setTimeout(() => { if (run === detectorRun) moveDetector(index); }, step * delay)));
+      detectorTimers.push(setTimeout(() => {
+        if (run !== detectorRun) return; moveDetector(target);
+        detectorTimers.push(setTimeout(() => {
+          if (run !== detectorRun) return;
+          detectorTimers = []; detectorElement.classList.remove('active');
+          if (!over && !hasWrongFlags() && grid[target]?.guess) { message.innerHTML = '<b>Kein sicherer Tipp möglich.</b> Der Metalldetektor hat ein sicheres Feld gefunden und öffnet es.'; reveal(target); }
+        }, 350));
+      }, stops.length * delay + 100));
+    }
     function analyzeDeductions() {
       const certainMines = new Set(), certainSafe = new Set();
       grid.forEach((cell, index) => {
@@ -182,6 +203,7 @@
       return { certainMines, certainSafe };
     }
     function updateGuessMarks() {
+      stopDetector();
       grid.forEach(cell => { cell.guess = false; });
       clearTimeout(autoSafeTimer); autoSafeTimer = null;
       if (!placed || over) { grid.forEach((_, index) => draw(index)); return; }
@@ -199,14 +221,14 @@
         const safeGuesses = [...guesses].filter(index => !grid[index].mine);
         const safeGuess = safeGuesses[Math.floor(Math.random() * safeGuesses.length)];
         if (safeGuess !== undefined && !hasWrongFlags()) {
-          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && !hasWrongFlags() && grid[safeGuess]?.guess) { message.innerHTML = '<b>Kein sicherer Tipp möglich.</b> Ein sicheres Feld wurde automatisch geöffnet.'; reveal(safeGuess); } }, 700);
+          autoSafeTimer = setTimeout(() => { autoSafeTimer = null; if (!over && !hasWrongFlags() && grid[safeGuess]?.guess) sweepDetector([...guesses], safeGuess); }, 700);
         }
       }
       grid.forEach((_, index) => draw(index));
     }
     function showHint() {
       if (over || revealing) return;
-      clearTimeout(autoSafeTimer); autoSafeTimer = null; clearHints();
+      clearTimeout(autoSafeTimer); autoSafeTimer = null; stopDetector(); clearHints();
       if (!placed) { message.innerHTML = '<b>Decke zuerst ein Feld auf.</b> Danach kann ich einen Hinweis geben.'; return; }
       const wrongFlags = grid.filter(cell => cell.flag && !cell.mine);
       if (wrongFlags.length) {
@@ -225,6 +247,7 @@
     function toggleFlag(index) { if (over || revealing) return; const cell = grid[index]; if (cell.open) return; clearHints(); cell.flag = !cell.flag; flagCount += cell.flag ? 1 : -1; updateGuessMarks(); updateStats(); }
     function reveal(index) {
       if (over || revealing || grid[index].flag || grid[index].open) return;
+      stopDetector();
       clearHints();
       if (!placed) placeMines(index);
       if (grid[index].mine) return lose(index);
