@@ -34,7 +34,13 @@
     .setting-button { min-width: 0; padding: 7px 8px; border: 2px solid #171717; border-radius: 8px; color: var(--muted); background: #FFFFFF; font-size: .78rem; white-space: nowrap; }
     .setting-button.active { color: #FFFFFF; background: var(--red); }
     .mine-setting { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
-    .mine-setting input { width: 100%; min-width: 0; margin: 0; accent-color: var(--red); }
+    .mine-setting input { width: 100%; min-width: 0; height: 24px; margin: 0; padding: 0; background: transparent; cursor: pointer; appearance: none; -webkit-appearance: none; }
+    .mine-setting input::-webkit-slider-runnable-track { height: 7px; border: 1px solid #171717; border-radius: 999px; background: #D5D5D5; }
+    .mine-setting input::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -8px; border: 3px solid #171717; border-radius: 50%; background: var(--red); -webkit-appearance: none; }
+    .mine-setting input::-moz-range-track { height: 7px; border: 1px solid #171717; border-radius: 999px; background: #D5D5D5; }
+    .mine-setting input::-moz-range-progress { height: 7px; border-radius: 999px; background: var(--red); }
+    .mine-setting input::-moz-range-thumb { width: 16px; height: 16px; border: 3px solid #171717; border-radius: 50%; background: var(--red); }
+    .mine-setting input:focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
     .mine-setting output { min-width: 3.8em; color: var(--text); font-size: .78rem; font-weight: 800; text-align: right; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; text-align: center; }
     .stat { padding: 8px 3px; border: 2px solid #171717; border-radius: 10px; }
@@ -113,7 +119,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.46</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.47</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
