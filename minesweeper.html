@@ -54,7 +54,6 @@
     @keyframes revealCell { from { opacity: .45; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
     .cell.opening { animation: revealCell .18s ease-out; }
     .cell.flag { background: #4B8ED8; font-size: clamp(1.2rem, 6vw, 1.7rem); }
-    .cell.guess { background: #EF4B3F; }
     .cell.mine { background: #EF4B3F; }
     .cell.wrong { background: #FFD166; }
     .cell.hint-safe, .cell.hint-mine { color: #FFFFFF; background: var(--bg); }
@@ -112,7 +111,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.38</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.39</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -166,7 +165,7 @@
     }
     function draw(index) {
       const cell = grid[index], button = boardElement.children[index];
-      button.className = 'cell' + (cell.open ? ' open' : '') + (cell.opening ? ' opening' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (cell.guess && !cell.flag && !cell.open && !over ? ' guess' : '') + (cell.hint ? ` hint-${cell.hint}` : '') + (cell.wrongFlag && cell.flag ? ' wrong-flag' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
+      button.className = 'cell' + (cell.open ? ' open' : '') + (cell.opening ? ' opening' : '') + (cell.open && cell.count > 0 && !cell.mine ? ` n${cell.count}` : '') + (cell.flag && !cell.open ? ' flag' : '') + (cell.hint ? ` hint-${cell.hint}` : '') + (cell.wrongFlag && cell.flag ? ' wrong-flag' : '') + (over && cell.mine && !cell.flag ? ' mine' : '') + (over && cell.flag && !cell.mine ? ' wrong' : '');
       const label = cell.flag && !over ? '⚑' : over && cell.mine ? (cell.flag ? '⚑' : '✹') : over && cell.flag && !cell.mine ? '✕' : cell.hint && !cell.open ? '?' : cell.open && cell.count > 0 ? cell.count : '';
       button.replaceChildren(); if (label) { const content = document.createElement('span'); content.className = cell.flag && (over || !cell.open) ? 'flag-icon' : ''; content.textContent = label; button.appendChild(content); }
       button.setAttribute('aria-label', cell.open ? (cell.count ? `${cell.count} Minen in der Nähe` : 'Leeres Feld') : cell.wrongFlag && cell.flag ? 'Falsch gesetzte Flagge' : cell.hint === 'safe' ? 'Sicheres Feld' : cell.hint === 'mine' ? 'Sichere Mine' : cell.flag ? 'Flagge' : 'Verdecktes Feld');
