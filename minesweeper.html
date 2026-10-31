@@ -77,6 +77,7 @@
     .cell:focus-visible { outline: 3px solid #EF4B3F; outline-offset: -3px; }
     @media (prefers-reduced-motion: reduce) { .cell.flag.wave { animation: none; } .cell.opening { animation-duration: .01ms; } }
     @media (max-width: 600px) { .game.medium-mode .board, .game.hard-mode .board { width: calc(100% + 18px); max-width: none; margin-left: -9px; margin-right: -9px; } }
+    @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) { .app.tablet-wide { width: min(100%, 1100px); } .app.tablet-wide .board { max-width: 1040px; } }
     .new-game { display: block; width: 100%; padding: 12px; border: 3px solid #171717; border-radius: 10px; color: #FFFFFF; background: var(--red); font-weight: 800; box-shadow: 4px 4px 0 #171717; }
   </style>
 </head>
@@ -124,7 +125,7 @@
   </main>
   <script>
     const boardSizes = { '9x9': { cols: 9, rows: 9 }, '12x12': { cols: 12, rows: 12 }, '12x21': { cols: 12, rows: 21 } };
-    const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game'), detectorElement = document.getElementById('metalDetector');
+    const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game'), appElement = document.querySelector('.app'), detectorElement = document.getElementById('metalDetector');
     const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
     let boardSize = '9x9', mineCount = 10, activeConfig = null, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0, shovelIndex = null;
@@ -154,6 +155,7 @@
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
       activeConfig = selectedConfig(); updateSizeButtons();
+      appElement.classList.toggle('tablet-wide', boardSize === '12x21' && tabletLandscape());
       stopDetector();
       shovelIndex = null;
       gamePanel.classList.toggle('medium-mode', boardSize === '12x12'); gamePanel.classList.toggle('hard-mode', boardSize === '12x21');

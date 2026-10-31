@@ -67,10 +67,11 @@
     .memory-card:disabled { cursor: default; }
     button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
     .new-game { display: block; width: 100%; padding: 12px; border: 3px solid #171717; border-radius: 10px; color: #FFFFFF; background: var(--purple); font-weight: 800; box-shadow: 4px 4px 0 #171717; }
-    .new-game:hover { filter: brightness(1.1); }
+     .new-game:hover { filter: brightness(1.1); }
     .message { min-height: 27px; margin: 0 0 10px; color: var(--muted); text-align: center; font-size: .9rem; }
     .message b { color: var(--text); }
     @media (max-width: 400px) { .game { padding: 15px; } .board { gap: 5px; } .memory-card { border-radius: 8px; } .size { padding: 6px 7px; } }
+    @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) { .app.tablet-wide { width: min(100%, 960px); } .app.tablet-wide .board { max-width: 840px; } }
   </style>
 </head>
 <body>
@@ -121,7 +122,7 @@
       { symbol: '🎨', color: '#CFBAF0' }, { symbol: '🐸', color: '#BDE0A8' }, { symbol: '🍋', color: '#FFF3B0' },
       { symbol: '🦁', color: '#F9C74F' }, { symbol: '🎈', color: '#F28482' }, { symbol: '🌍', color: '#90DBF4' }
     ];
-    const boardElement = document.getElementById('board');
+    const boardElement = document.getElementById('board'), appElement = document.querySelector('.app');
     const sizeButtons = [...document.querySelectorAll('.size')];
     const gamePanel = document.querySelector('.game');
     let size = 8, mode = 'single', currentPlayer = 1, playerScores = [0, 0], cards = [], first = null, second = null, locked = false, moves = 0, pairs = 0, seconds = 0, timer;
@@ -129,7 +130,7 @@
     const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const tabletLandscape = () => matchMedia('(min-width: 768px) and (max-width: 1366px) and (orientation: landscape)').matches;
     const boardColumns = () => size === 18 || (size === 12 && tabletLandscape()) ? 6 : 4;
-    function applyBoardLayout() { boardElement.style.gridTemplateColumns = `repeat(${boardColumns()}, 1fr)`; }
+    function applyBoardLayout() { boardElement.style.gridTemplateColumns = `repeat(${boardColumns()}, 1fr)`; appElement.classList.toggle('tablet-wide', size === 12 && tabletLandscape()); }
     function updateSizeLabels() { sizeButtons.forEach(button => { button.textContent = button.dataset.size === '12' && tabletLandscape() ? '6 × 4' : button.dataset.size === '12' ? '4 × 6' : button.dataset.size === '18' ? '6 × 6' : '4 × 4'; }); }
     window.addEventListener('resize', () => { if (!gamePanel.classList.contains('victory')) { applyBoardLayout(); updateSizeLabels(); } });
     const pose = (dx = 0, dy = 0, rot = 0, flip = 0) => ({ dx, dy, rot, flip });
