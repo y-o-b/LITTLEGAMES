@@ -119,7 +119,7 @@
       <div class="metal-detector" id="metalDetector" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="7" y="5" width="29" height="13" rx="4" fill="#EF4B3F" stroke="#171717" stroke-width="3"/><rect x="12" y="8" width="9" height="5" rx="1" fill="#FFFFFF"/><path d="M30 17 48 47" fill="none" stroke="#171717" stroke-width="6" stroke-linecap="round"/><path d="M31 19 46 44" fill="none" stroke="#4B8ED8" stroke-width="2"/><ellipse cx="49" cy="53" rx="12" ry="6" transform="rotate(-28 49 53)" fill="none" stroke="#171717" stroke-width="4"/></svg></div>
       <button class="new-game" id="newGame" type="button">Neues Spiel</button>
     </section>
-    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.48</button>
+    <button class="version" data-version type="button" title="Klicken, um die Seite neu zu laden">Version 1.49</button>
     <script>const versionButton = document.querySelector('[data-version]'); versionButton.addEventListener('click', () => location.replace(`${location.pathname}?v=${Date.now()}`)); fetch(`VERSION?${Date.now()}`, { cache: 'no-store' }).then(response => response.text()).then(version => { versionButton.textContent = `Version ${version.trim()}`; }).catch(() => {});</script>
   </main>
   <script>
@@ -127,7 +127,7 @@
     const boardElement = document.getElementById('board'), message = document.getElementById('message'), flagToggle = document.getElementById('flagToggle'), gamePanel = document.querySelector('.game'), detectorElement = document.getElementById('metalDetector');
     const mineCountInput = document.getElementById('mineCount'), mineCountOutput = document.getElementById('mineCountValue');
     const SIZE_STORAGE_KEY = 'y-o-b.minesweeper.size.v1', MINE_COUNT_STORAGE_KEY = 'y-o-b.minesweeper.mine-count.v1', LEVEL_STORAGE_KEY = 'y-o-b.minesweeper.level.v1';
-    let boardSize = '9x9', mineCount = 10, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0, shovelIndex = null;
+    let boardSize = '9x9', mineCount = 10, activeConfig = null, grid = [], over = false, placed = false, flagMode = false, seconds = 0, timer = null, openCount = 0, flagCount = 0, pressTimer = null, longPressed = false, autoSafeTimer = null, revealTimers = [], revealing = false, detectorTimers = [], detectorRun = 0, shovelIndex = null;
     const maxMineCount = size => ({ '9x9': 60, '12x12': 80, '12x21': 120 })[size];
     try {
       const savedSize = localStorage.getItem(SIZE_STORAGE_KEY), savedMineCount = localStorage.getItem(MINE_COUNT_STORAGE_KEY);
@@ -141,11 +141,19 @@
     document.querySelectorAll('[data-size]').forEach(button => button.classList.toggle('active', button.dataset.size === boardSize));
     function updateMineControl() { const max = maxMineCount(boardSize); mineCount = Math.min(mineCount, max); mineCountInput.max = max; mineCountInput.value = mineCount; mineCountOutput.value = `${mineCount} / ${max}`; mineCountOutput.textContent = `${mineCount} / ${max}`; }
     updateMineControl();
-    const config = () => ({ ...boardSizes[boardSize], mines: mineCount });
+    const tabletLandscape = () => matchMedia('(min-width: 768px) and (max-width: 1366px) and (orientation: landscape)').matches;
+    function selectedConfig() { const size = boardSizes[boardSize], rotate = boardSize === '12x21' && tabletLandscape(); return { cols: rotate ? size.rows : size.cols, rows: rotate ? size.cols : size.rows, mines: mineCount }; }
+    const config = () => activeConfig || selectedConfig();
+    function updateSizeButtons() {
+      const landscape = activeConfig ? activeConfig.cols > activeConfig.rows : tabletLandscape();
+      document.querySelectorAll('[data-size]').forEach(button => { const [cols, rows] = button.dataset.size.split('x').map(Number); button.textContent = button.dataset.size === '12x21' && landscape ? `${rows}×${cols}` : `${cols}×${rows}`; button.classList.toggle('active', button.dataset.size === boardSize); });
+    }
+    updateSizeButtons();
     function saveSettings() { try { localStorage.setItem(SIZE_STORAGE_KEY, boardSize); localStorage.setItem(MINE_COUNT_STORAGE_KEY, String(mineCount)); } catch (error) { console.warn('Detektor-Einstellungen konnten nicht gespeichert werden.', error); } }
     const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const neighbors = (index) => { const { cols, rows } = config(), x = index % cols, y = Math.floor(index / cols), list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows) list.push(ny * cols + nx); } return list; };
     function start() {
+      activeConfig = selectedConfig(); updateSizeButtons();
       stopDetector();
       shovelIndex = null;
       gamePanel.classList.toggle('medium-mode', boardSize === '12x12'); gamePanel.classList.toggle('hard-mode', boardSize === '12x21');
